@@ -1,0 +1,99 @@
+group: Brookies Coffee
+
+producto = {
+    id_producto, nombre, descripcion, precio, categoria, tipo_preparacion, disponible
+    1, 'Espresso', 'Shot de espresso', 1800, 'Café', 'caliente', 1
+    2, 'Americano', 'Espresso alargado con agua caliente', 2200, 'Café', 'caliente', 1
+    3, 'Latte', 'Espresso con leche entera texturizada', 2900, 'Café', 'caliente', 1
+    4, 'Cappuccino', 'Espresso con leche y espuma', 2900, 'Café', 'caliente', 1
+    5, 'Latte de avena', 'Espresso con leche de avena', 3200, 'Café', 'caliente', 1
+    6, 'Cold brew', 'Café de extracción en frío con hielo', 3300, 'Café', 'frio', 1
+    7, 'Té verde', 'Infusión de té verde', 2000, 'Té', 'caliente', 1
+    8, 'Galleta de chocolate', 'Galleta con chips de chocolate', 1900, 'Galleta', 'no_aplica', 1
+    9, 'Galleta vegana de avena', 'Galleta de avena sin huevo ni lácteos', 2100, 'Galleta', 'no_aplica', 1
+    10, 'Galleta sin gluten de almendras', 'Galleta de harina de almendras', 2300, 'Galleta', 'no_aplica', 1
+    11, 'Brookie clásico', 'Mezcla de brownie y galleta', 2600, 'Galleta', 'no_aplica', 1
+    12, 'Brookie de temporada', 'Retirado del menú por ahora', 2800, 'Galleta', 'no_aplica', 0
+}
+
+insumo = {
+    id_insumo, nombre, unidad_medida, stock_actual, stock_minimo, contiene_gluten, contiene_lactosa, es_origen_animal
+    1, 'Café molido', 'g', 4500, 1000, 0, 0, 0
+    2, 'Leche entera', 'ml', 9000, 3000, 0, 1, 1
+    3, 'Leche de avena', 'ml', 5000, 1500, 1, 0, 0
+    4, 'Azúcar', 'g', 7000, 1500, 0, 0, 0
+    5, 'Harina de trigo', 'g', 9000, 2000, 1, 0, 0
+    6, 'Mantequilla', 'g', 2400, 800, 0, 1, 1
+    7, 'Huevos', 'unidad', 20, 24, 0, 0, 1
+    8, 'Chips de chocolate', 'g', 2200, 500, 0, 0, 0
+    9, 'Té verde en hebras', 'g', 90, 100, 0, 0, 0
+    10, 'Harina de almendras', 'g', 1500, 400, 0, 0, 0
+    11, 'Aceite vegetal', 'ml', 1800, 500, 0, 0, 0
+    12, 'Avena en hojuelas', 'g', 2500, 500, 1, 0, 0
+}
+
+receta = {
+    id_producto, id_insumo, cantidad_requerida
+    1, 1, 16
+    2, 1, 16
+    3, 1, 16
+    3, 2, 200
+    4, 1, 16
+    4, 2, 120
+    5, 1, 16
+    5, 3, 200
+    6, 1, 25
+    6, 4, 5
+    7, 4, 5
+    7, 9, 3
+    8, 4, 35
+    8, 5, 60
+    8, 6, 40
+    8, 7, 0.5
+    8, 8, 30
+    9, 4, 35
+    9, 5, 50
+    9, 8, 20
+    9, 11, 30
+    9, 12, 40
+    10, 4, 30
+    10, 7, 0.5
+    10, 10, 60
+    11, 4, 50
+    11, 5, 70
+    11, 6, 60
+    11, 7, 1
+    11, 8, 50
+}
+
+pedido = {
+    id_pedido, id_cliente, fecha, estado, total
+    1, 2, '2026-09-14 10:05:00', 'listo', 7700
+    2, 3, '2026-09-15 16:20:00', 'listo', 8500
+    3, 4, '2026-09-17 09:40:00', 'en_preparacion', 7900
+    4, 2, '2026-09-18 12:10:00', 'recibido', 6700
+    5, 3, '2026-09-19 11:00:00', 'recibido', 1800
+}
+
+detalle_pedido = {
+    id_pedido, id_producto, cantidad, precio_unitario
+    1, 3, 2, 2900
+    1, 8, 1, 1900
+    2, 6, 1, 3300
+    2, 11, 2, 2600
+    3, 4, 2, 2900
+    3, 9, 1, 2100
+    4, 1, 1, 1800
+    4, 3, 1, 2900
+    4, 7, 1, 2000
+    5, 1, 1, 1800
+}
+
+pago = {
+    id_pago, id_pedido, monto, metodo_pago, token_transaccion, estado_pago, fecha_pago
+    1, 1, 7700, 'tarjeta', 'tok_demo_0001', 'aprobado', '2026-09-14 10:05:40'
+    2, 2, 8500, 'tarjeta', 'tok_demo_0002', 'aprobado', '2026-09-15 16:20:35'
+    3, 3, 7900, 'tarjeta', 'tok_demo_0003', 'aprobado', '2026-09-17 09:40:50'
+    4, 4, 6700, 'tarjeta', 'tok_demo_0004', 'aprobado', '2026-09-18 12:10:42'
+    5, 5, 1800, 'tarjeta', 'tok_demo_0005', 'aprobado', '2026-09-19 11:00:31'
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "file": "01_alter_indice_producto.sql",
+    "tipo": "ALTER",
+    "titulo": "Índice sobre producto.categoria",
+    "params": [],
+    "verificacion": {
+      "sql": "SELECT index_name AS indice, column_name AS columna FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'producto' AND index_name = 'idx_producto_categoria'",
+      "params": []
+    }
+  },
+  {
+    "id": 2,
+    "file": "02_alter_respaldo_fecha.sql",
+    "tipo": "ALTER",
+    "titulo": "Columna fecha_respaldo en la tabla de respaldo",
+    "params": [],
+    "verificacion": {
+      "sql": "SELECT column_name AS columna, column_type AS tipo FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'respaldo_insumo' ORDER BY ordinal_position",
+      "params": []
+    }
+  },
+  {
+    "id": 3,
+    "file": "03_select_productos_filtrados.sql",
+    "tipo": "SELECT",
+    "titulo": "Consulta de productos con filtros (categoría Café, caliente)",
+    "params": [
+      "Café",
+      "caliente"
+    ]
+  },
+  {
+    "id": 4,
+    "file": "04_select_mas_vendidos.sql",
+    "tipo": "SELECT",
+    "titulo": "Productos más vendidos (JOIN + GROUP BY)",
+    "params": []
+  },
+  {
+    "id": 5,
+    "file": "05_select_insumos_criticos.sql",
+    "tipo": "SELECT",
+    "titulo": "Insumos en stock crítico y productos que los usan (JOIN de 3 tablas)",
+    "params": []
+  },
+  {
+    "id": 6,
+    "file": "06_update_reabastecer_insumo.sql",
+    "tipo": "UPDATE",
+    "titulo": "Reabastecer 60 unidades de Huevos (id 7)",
+    "params": [
+      60,
+      7
+    ],
+    "verificacion": {
+      "sql": "SELECT id_insumo, nombre, stock_actual, stock_minimo FROM insumo WHERE id_insumo = ?",
+      "params": [
+        7
+      ]
+    }
+  },
+  {
+    "id": 7,
+    "file": "07_update_descontar_por_receta.sql",
+    "tipo": "UPDATE",
+    "titulo": "Descontar insumos de 2 Latte (id 3) según su receta",
+    "params": [
+      2,
+      3
+    ],
+    "verificacion": {
+      "sql": "SELECT i.id_insumo, i.nombre, i.stock_actual FROM insumo i JOIN receta r ON r.id_insumo = i.id_insumo WHERE r.id_producto = ? ORDER BY i.id_insumo",
+      "params": [
+        3
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "file": "08_insert_insumo.sql",
+    "tipo": "INSERT",
+    "titulo": "Registrar el insumo Sirope de caramelo",
+    "params": [
+      "Sirope de caramelo",
+      "ml",
+      3000,
+      500,
+      0,
+      0,
+      0
+    ],
+    "verificacion": {
+      "sql": "SELECT id_insumo, nombre, unidad_medida, stock_actual, stock_minimo FROM insumo WHERE nombre = ?",
+      "params": [
+        "Sirope de caramelo"
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "file": "09_insert_producto.sql",
+    "tipo": "INSERT",
+    "titulo": "Agregar el producto Caramel latte al menú",
+    "params": [
+      "Caramel latte",
+      "Latte con sirope de caramelo",
+      3400,
+      "Café",
+      "caliente",
+      1
+    ],
+    "verificacion": {
+      "sql": "SELECT id_producto, nombre, precio, categoria, tipo_preparacion, disponible FROM producto WHERE nombre = ?",
+      "params": [
+        "Caramel latte"
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "file": "10_insert_receta.sql",
+    "tipo": "INSERT",
+    "titulo": "Agregar 30 ml de Sirope de caramelo a la receta del Caramel latte",
+    "params": [
+      30,
+      "Sirope de caramelo",
+      "Caramel latte"
+    ],
+    "verificacion": {
+      "sql": "SELECT p.nombre AS producto, i.nombre AS insumo, r.cantidad_requerida FROM receta r JOIN producto p ON p.id_producto = r.id_producto JOIN insumo i ON i.id_insumo = r.id_insumo WHERE p.nombre = ?",
+      "params": [
+        "Caramel latte"
+      ]
+    }
+  },
+  {
+    "id": 11,
+    "file": "11_delete_receta.sql",
+    "tipo": "DELETE",
+    "titulo": "Quitar el Azúcar (id 4) de la receta del Cold brew (id 6)",
+    "params": [
+      6,
+      4
+    ],
+    "verificacion": {
+      "sql": "SELECT id_producto, id_insumo, cantidad_requerida FROM receta WHERE id_producto = ?",
+      "params": [
+        6
+      ]
+    }
+  },
+  {
+    "id": 12,
+    "file": "12_delete_pedido_prueba.sql",
+    "tipo": "DELETE",
+    "titulo": "Eliminar el pedido de prueba 5 (CASCADE a detalle y pago)",
+    "params": [
+      5
+    ],
+    "verificacion": {
+      "sql": "SELECT (SELECT COUNT(*) FROM pedido WHERE id_pedido = ?) AS pedidos, (SELECT COUNT(*) FROM detalle_pedido WHERE id_pedido = ?) AS detalles, (SELECT COUNT(*) FROM pago WHERE id_pedido = ?) AS pagos",
+      "params": [
+        5,
+        5,
+        5
+      ]
+    }
+  },
+  {
+    "id": 13,
+    "file": "13_drop_respaldo_insumo.sql",
+    "tipo": "DROP",
+    "titulo": "Eliminar la tabla de respaldo temporal",
+    "params": [],
+    "verificacion": {
+      "sql": "SELECT COUNT(*) AS tablas_existentes FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'respaldo_insumo'",
+      "params": []
+    }
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "name": "grupo20-brookiescoffee",
+  "version": "0.1.0",
+  "description": "Brookies Coffee: sistema web de pedidos y gestión de inventario (ICI-324, Etapa 1)",
+  "main": "src/server.js",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:reset": "node scripts/migrate.js --reset",
+    "queries": "node scripts/run_queries.js",
+    "queries:md": "node scripts/run_queries.js --md",
+    "export:relax": "node scripts/export_relax.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "mysql2": "^3.11.0"
+  }
+}
