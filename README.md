@@ -6,7 +6,22 @@ Proyecto del ramo **ICI-324 Bases de Datos y Programación Web** (Universidad de
 - **Integrantes:** Felipe Hernández Olivares · Simón Reyes Morales
 - **Profesor:** Benjamín Serrano
 - **Etapa:** 1 (base de datos implementada, conexión desde la aplicación y 13 consultas SQL)
-- **Backend desplegado:** `<pegar aquí la URL del servicio en Render>`
+- **Backend desplegado:** https://brookies-coffee-api.onrender.com
+
+## Dónde vive el proyecto (Etapa 1)
+
+- **Backend (API):** desplegado en [Render](https://render.com), plan gratuito, en
+  https://brookies-coffee-api.onrender.com. Se redeploya solo con cada push a `main`.
+- **Base de datos:** MySQL en [Aiven](https://aiven.io), plan gratuito (servicio `brookies-db`).
+  El backend se conecta a ella por SSL (variables `DB_SSL` y `DB_SSL_CA_CONTENT` en Render).
+
+Para comprobar que está arriba, desde cualquier computador (no hace falta el nuestro):
+- https://brookies-coffee-api.onrender.com/health → estado de la app y de la base
+- https://brookies-coffee-api.onrender.com/api/v1/products → menú con filtros
+
+> **Nota:** el plan gratuito de Render "duerme" el servicio después de 15 minutos sin tráfico.
+> La primera petición después de eso puede demorar hasta un minuto en responder mientras despierta;
+> no es un error. Conviene abrir `/health` un par de minutos antes de mostrarlo en vivo.
 
 ## Qué hace
 
