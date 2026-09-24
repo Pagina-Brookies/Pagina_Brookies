@@ -98,4 +98,48 @@ async function findById(id) {
   return { ...toProduct(rows[0]), receta };
 }
 
-module.exports = { findAll, findById };
+/** RF15 — agregar un producto al menú. */
+async function create(data) {
+  const result = await db.execute(
+    `INSERT INTO producto (nombre, descripcion, precio, categoria, tipo_preparacion, disponible)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [data.nombre, data.descripcion, data.precio, data.categoria, data.tipo_preparacion, data.disponible]
+  );
+  return findById(result.insertId);
+}
+
+/** RF12 — agregar un insumo a la receta de un producto (upsert de la cantidad). */
+async function addRecipeItem(idProducto, idInsumo, cantidadRequerida) {
+  await db.execute(
+    `INSERT INTO receta (id_producto, id_insumo, cantidad_requerida) VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE cantidad_requerida = VALUES(cantidad_requerida)`,
+    [idProducto, idInsumo, cantidadRequerida]
+  );
+  return findById(idProducto);
+}
+
+/** RF12 — quitar un insumo de la receta de un producto. Devuelve false si no existía esa fila. */
+async function removeRecipeItem(idProducto, idInsumo) {
+  const result = await db.execute('DELETE FROM receta WHERE id_producto = ? AND id_insumo = ?', [idProducto, idInsumo]);
+  return result.affectedRows > 0;
+}
+
+/**
+ * RF10 — descuenta del inventario los insumos de la receta de un producto,
+ * multiplicados por la cantidad vendida (consulta 07). Es una sola sentencia
+ * UPDATE...JOIN: MySQL la aplica de forma atómica, así que si algún insumo
+ * quedaría bajo cero la restricción CHECK rechaza el UPDATE completo y no
+ * queda ningún insumo a medio descontar.
+ */
+async function sellByRecipe(idProducto, cantidad) {
+  const result = await db.execute(
+    `UPDATE insumo i
+     JOIN receta r ON r.id_insumo = i.id_insumo
+     SET i.stock_actual = i.stock_actual - (r.cantidad_requerida * ?)
+     WHERE r.id_producto = ?`,
+    [cantidad, idProducto]
+  );
+  return result.affectedRows; // 0 => el producto no existe o no tiene receta
+}
+
+module.exports = { findAll, findById, create, addRecipeItem, removeRecipeItem, sellByRecipe };

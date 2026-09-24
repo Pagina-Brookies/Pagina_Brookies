@@ -86,12 +86,24 @@ Las consultas SELECT (03, 04 y 05) están en álgebra relacional en `docs/algebr
 
 ## API
 
+Documentación interactiva (Swagger / OpenAPI) en `/api-docs` — se puede probar cada endpoint
+desde el navegador, con el botón "Try it out". El JSON crudo del spec está en `/api-docs.json`.
+
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/health` | Estado de la aplicación y de la base de datos |
-| GET | `/api/v1/products` | Consulta de productos con filtros |
+| GET | `/api/v1/products` | Consulta de productos con filtros (RF04) |
 | GET | `/api/v1/products/:id` | Un producto con su receta |
-| GET | `/api/v1/supplies?critical=true` | Inventario de insumos (solo los críticos con `critical=true`) |
+| POST | `/api/v1/products` | Agregar un producto al menú (RF15) |
+| POST | `/api/v1/products/:id/recipe` | Agregar o actualizar un insumo en la receta (RF12) |
+| DELETE | `/api/v1/products/:id/recipe/:idInsumo` | Quitar un insumo de la receta (RF12) |
+| POST | `/api/v1/products/:id/sell` | Descontar insumos según receta al vender (RF10) |
+| GET | `/api/v1/supplies?critical=true` | Inventario de insumos (RF11); solo críticos con `critical=true` (RF13) |
+| GET | `/api/v1/supplies/:id` | Un insumo |
+| POST | `/api/v1/supplies` | Registrar un insumo (RF11) |
+| PATCH | `/api/v1/supplies/:id/restock` | Reabastecer stock (RF14) |
+| GET | `/api/v1/reports/top-products` | Productos más vendidos (RF16, consulta 04) |
+| GET | `/api/v1/reports/critical-supplies` | Insumos críticos y sus productos (RF16, consulta 05) |
 
 Filtros de `GET /api/v1/products`: `category` (por defecto `todas`), `available` (por defecto `true`, considera el stock de
 la receta), `name`, `suitable_for` (`sin_gluten`, `sin_lactosa`, `vegano`), `preparation` (`caliente`, `frio`) y
@@ -100,7 +112,20 @@ la receta), `name`, `suitable_for` (`sin_gluten`, `sin_lactosa`, `vegano`), `pre
 Ejemplo: `GET /api/v1/products?category=Galleta&suitable_for=vegano&sort=precio`
 
 Todas las respuestas tienen la misma forma: `{ "data": ..., "errors": [] }`. Los errores de datos devuelven 400,
-lo que no existe 404 y las fallas internas 500 con un mensaje genérico.
+lo que no existe 404, un conflicto de negocio (por ejemplo, una venta que dejaría un insumo con stock negativo) 422,
+y las fallas internas 500 con un mensaje genérico.
+
+### Validación de entradas
+
+Todos los endpoints de escritura (`POST`, `PATCH`, `DELETE`) validan cada campo antes de tocar la base de datos:
+números negativos, texto donde va un número, booleanos mal tipados (`"true"` en vez de `true`), valores fuera de una
+lista fija (categoría, tipo de preparación), campos faltantes y textos vacíos o demasiado largos se rechazan con 400
+y un detalle por campo. `npm test` incluye casos adversariales para cada validador
+(`tests/validators-resources.test.js`).
+
+La consulta 07 (descontar insumos según receta) se ejecuta como una sola sentencia `UPDATE ... JOIN`: si la venta
+dejaría algún insumo bajo cero, la restricción `CHECK` de la base de datos rechaza el `UPDATE` completo — ningún
+insumo queda descontado a medias — y la API traduce ese error en un 422 legible (`src/utils/sqlErrors.js`).
 
 ## Estructura del proyecto
 
@@ -109,11 +134,12 @@ migrations/     esquema (001) y datos de prueba (002)
 queries/        las 13 consultas SQL y su manifiesto de parámetros
 src/
   config/       conexión a la base de datos (lee variables de entorno)
-  routes/       mapa de la API
+  docs/         spec de OpenAPI para Swagger UI (swagger.js)
+  routes/       mapa de la API, con las anotaciones @swagger de cada endpoint
   controllers/  leen la petición, llaman al modelo y eligen la respuesta
   models/       consultas SQL parametrizadas
   middleware/   errores y rutas no encontradas
-  utils/        validación y formato de respuestas
+  utils/        validación, formato de respuestas y traducción de errores de MySQL (sqlErrors.js)
   views/        vacía por ahora (Etapa 2)
 scripts/        migrar la base, ejecutar las consultas, exportar a RelaX
 tests/          pruebas unitarias (npm test)
