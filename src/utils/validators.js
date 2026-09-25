@@ -246,5 +246,8 @@ module.exports = {
   parseProductQuery, parseId, escapeLike,
   parseInteger, parsePositiveInt, parseDecimal, parseText, parseBoolean, parseEnum,
   validateInsumoCreate, validateRestock, validateProductoCreate, validateRecetaItem, validateSell,
+  // PUT reemplaza el recurso completo, así que exige los mismos campos que crear uno nuevo.
+  validateInsumoUpdate: validateInsumoCreate,
+  validateProductoUpdate: validateProductoCreate,
   CATEGORIES, PREPARATION, SUITABLE_FOR,
 };

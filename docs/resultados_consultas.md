@@ -108,7 +108,7 @@ Resultado:
 | 6 | Cold brew | 1 |
 | 8 | Galleta de chocolate | 1 |
 | 9 | Galleta vegana de avena | 1 |
-| 7 | Té verde | 1 |
+| 7 | Matcha | 1 |
 
 ## Consulta 05 · SELECT
 
@@ -138,7 +138,7 @@ Resultado:
 | Huevos | 20 | 24 | Brookie clásico |
 | Huevos | 20 | 24 | Galleta de chocolate |
 | Huevos | 20 | 24 | Galleta sin gluten de almendras |
-| Té verde en hebras | 90 | 100 | Té verde |
+| Matcha en polvo | 90 | 100 | Matcha |
 
 ## Consulta 06 · UPDATE
 

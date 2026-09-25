@@ -46,6 +46,30 @@ async function restock(id, cantidad) {
   return findById(id);
 }
 
+/** RF11 — editar un insumo (reemplazo completo de los campos editables). Devuelve null si no existe. */
+async function update(id, data) {
+  const result = await db.execute(
+    `UPDATE insumo
+     SET nombre = ?, unidad_medida = ?, stock_actual = ?, stock_minimo = ?,
+         contiene_gluten = ?, contiene_lactosa = ?, es_origen_animal = ?
+     WHERE id_insumo = ?`,
+    [data.nombre, data.unidad_medida, data.stock_actual, data.stock_minimo,
+      data.contiene_gluten, data.contiene_lactosa, data.es_origen_animal, id]
+  );
+  if (result.affectedRows === 0) return null;
+  return findById(id);
+}
+
+/**
+ * RF11 — eliminar un insumo. Si está en la receta de algún producto, la FK
+ * (RECETA.id_insumo, ON DELETE RESTRICT) rechaza el DELETE: hay que quitarlo
+ * de esas recetas primero (DELETE /api/v1/products/:id/recipe/:idInsumo).
+ */
+async function remove(id) {
+  const result = await db.execute('DELETE FROM insumo WHERE id_insumo = ?', [id]);
+  return result.affectedRows > 0;
+}
+
 function toInsumo(r) {
   return {
     ...r,
@@ -56,4 +80,4 @@ function toInsumo(r) {
   };
 }
 
-module.exports = { findAll, findById, create, restock };
+module.exports = { findAll, findById, create, restock, update, remove };

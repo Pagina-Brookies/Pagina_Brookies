@@ -2,7 +2,7 @@
 
 const Producto = require('../models/producto.model');
 const {
-  parseId, parseProductQuery, validateProductoCreate, validateRecetaItem, validateSell,
+  parseId, parseProductQuery, validateProductoCreate, validateProductoUpdate, validateRecetaItem, validateSell,
 } = require('../utils/validators');
 const { ok, fail } = require('../utils/respond');
 const { mapSqlError } = require('../utils/sqlErrors');
@@ -113,4 +113,41 @@ async function sell(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, addRecipeItem, removeRecipeItem, sell };
+/** PUT /api/v1/products/:id — RF15: editar producto. */
+async function update(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return fail(res, 400, { field: 'id', message: 'debe ser un entero positivo' });
+
+    const { errors, data } = validateProductoUpdate(req.body);
+    if (errors.length > 0) return fail(res, 400, errors);
+
+    const product = await Producto.update(id, data);
+    if (!product) return fail(res, 404, 'producto no existe');
+    return ok(res, product);
+  } catch (err) {
+    const mapped = mapSqlError(err, { checkMessages: { ck_producto_precio: 'el precio debe ser mayor a 0' } });
+    if (mapped) return fail(res, mapped.status, mapped.message);
+    return next(err);
+  }
+}
+
+/** DELETE /api/v1/products/:id — RF15: eliminar producto. */
+async function remove(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return fail(res, 400, { field: 'id', message: 'debe ser un entero positivo' });
+
+    const removed = await Producto.remove(id);
+    if (!removed) return fail(res, 404, 'producto no existe');
+    return ok(res, { id_producto: id, eliminado: true });
+  } catch (err) {
+    const mapped = mapSqlError(err, {
+      restrictMessage: 'no se puede eliminar: el producto ya tiene ventas registradas. Márquelo como no disponible (disponible: false) en su lugar.',
+    });
+    if (mapped) return fail(res, mapped.status, mapped.message);
+    return next(err);
+  }
+}
+
+module.exports = { list, getById, create, update, remove, addRecipeItem, removeRecipeItem, sell };

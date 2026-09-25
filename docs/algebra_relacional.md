@@ -4,10 +4,9 @@ Las consultas SELECT del proyecto (`queries/03`, `04` y `05`) expresadas en álg
 Los resultados esperados corresponden a los datos de prueba originales (`migrations/002_seed.sql`),
 que son los mismos que trae el archivo de RelaX `algebra_relacional/brookies.relax.txt`.
 
-> **Antes de entregar:** estas expresiones no se pudieron probar en RelaX al escribirlas.
-> Pégalas en RelaX (cargando `brookies.relax.txt` como grupo) y compara el resultado con las tablas
-> de abajo. Si RelaX pide otra sintaxis (por ejemplo, el sentido de la flecha del renombre),
-> ajusta la notación; la idea de cada expresión no cambia.
+> **Verificado en RelaX** (25/09/2026): las 3 expresiones se probaron en https://dbis-uibk.github.io/relax/
+> cargando `brookies.relax.txt` como grupo de datos. El resultado de cada una calzó exacto con las
+> tablas de abajo. Los árboles de ejecución quedan como captura junto a cada consulta.
 > El álgebra relacional trabaja con conjuntos: el `ORDER BY` del SQL no forma parte de la expresión.
 
 Símbolos: π proyección · σ selección · ⋈ reunión natural · ρ renombre · γ agrupación.
@@ -34,6 +33,10 @@ En RelaX:
 ```
 pi id_producto, nombre, descripcion, precio, categoria, tipo_preparacion (sigma categoria = 'Café' and disponible = 1 and tipo_preparacion = 'caliente' (producto))
 ```
+
+Árbol y resultado verificados en RelaX:
+
+![Árbol de la consulta 03 en RelaX](algebra_relacional/relax_03_productos_filtrados.jpg)
 
 Resultado esperado:
 
@@ -71,6 +74,10 @@ En RelaX:
 gamma id_producto, nombre; sum(cantidad) -> unidades_vendidas (producto join detalle_pedido)
 ```
 
+Árbol y resultado verificados en RelaX:
+
+![Árbol de la consulta 04 en RelaX](algebra_relacional/relax_04_mas_vendidos.jpg)
+
 Resultado esperado (en el SQL va ordenado de mayor a menor):
 
 | id_producto | nombre | unidades_vendidas |
@@ -82,7 +89,7 @@ Resultado esperado (en el SQL va ordenado de mayor a menor):
 | 6 | Cold brew | 1 |
 | 8 | Galleta de chocolate | 1 |
 | 9 | Galleta vegana de avena | 1 |
-| 7 | Té verde | 1 |
+| 7 | Matcha | 1 |
 
 ---
 
@@ -114,6 +121,10 @@ En RelaX:
 pi nombre_insumo, stock_actual, stock_minimo, nombre_producto (sigma stock_actual <= stock_minimo ((rho nombre_insumo <- nombre (insumo)) join receta join (rho nombre_producto <- nombre (producto))))
 ```
 
+Árbol y resultado verificados en RelaX:
+
+![Árbol de la consulta 05 en RelaX](algebra_relacional/relax_05_stock_critico.jpg)
+
 Resultado esperado (las columnas `insumo` y `producto` del SQL aparecen aquí como `nombre_insumo` y `nombre_producto`):
 
 | insumo | stock_actual | stock_minimo | producto |
@@ -121,4 +132,4 @@ Resultado esperado (las columnas `insumo` y `producto` del SQL aparecen aquí co
 | Huevos | 20 | 24 | Brookie clásico |
 | Huevos | 20 | 24 | Galleta de chocolate |
 | Huevos | 20 | 24 | Galleta sin gluten de almendras |
-| Té verde en hebras | 90 | 100 | Té verde |
+| Matcha en polvo | 90 | 100 | Matcha |

@@ -20,7 +20,7 @@ INSERT INTO cliente (id_usuario, telefono, direccion) VALUES
 (3, '+56 9 2222 2222', 'Pasaje Ficticio 45, Viña del Mar'),
 (4, '+56 9 3333 3333', NULL);
 
--- Insumos (Huevos y Té verde parten bajo su stock mínimo, para probar la alerta de stock crítico)
+-- Insumos (Huevos y Matcha en polvo parten bajo su stock mínimo, para probar la alerta de stock crítico)
 INSERT INTO insumo (id_insumo, nombre, unidad_medida, stock_actual, stock_minimo, contiene_gluten, contiene_lactosa, es_origen_animal) VALUES
 (1,  'Café molido',         'g',      4500.00, 1000.00, FALSE, FALSE, FALSE),
 (2,  'Leche entera',        'ml',     9000.00, 3000.00, FALSE, TRUE,  TRUE),
@@ -30,7 +30,7 @@ INSERT INTO insumo (id_insumo, nombre, unidad_medida, stock_actual, stock_minimo
 (6,  'Mantequilla',         'g',      2400.00,  800.00, FALSE, TRUE,  TRUE),
 (7,  'Huevos',              'unidad',   20.00,   24.00, FALSE, FALSE, TRUE),
 (8,  'Chips de chocolate',  'g',      2200.00,  500.00, FALSE, FALSE, FALSE),
-(9,  'Té verde en hebras',  'g',        90.00,  100.00, FALSE, FALSE, FALSE),
+(9,  'Matcha en polvo',     'g',        90.00,  100.00, FALSE, FALSE, FALSE),
 (10, 'Harina de almendras', 'g',      1500.00,  400.00, FALSE, FALSE, FALSE),
 (11, 'Aceite vegetal',      'ml',     1800.00,  500.00, FALSE, FALSE, FALSE),
 (12, 'Avena en hojuelas',   'g',      2500.00,  500.00, TRUE,  FALSE, FALSE);
@@ -43,7 +43,7 @@ INSERT INTO producto (id_producto, nombre, descripcion, precio, categoria, tipo_
 (4,  'Cappuccino',                    'Espresso con leche y espuma',               2900.00, 'Café',    'caliente',  TRUE),
 (5,  'Latte de avena',                'Espresso con leche de avena',               3200.00, 'Café',    'caliente',  TRUE),
 (6,  'Cold brew',                     'Café de extracción en frío con hielo',     3300.00, 'Café',    'frio',      TRUE),
-(7,  'Té verde',                      'Infusión de té verde',                      2000.00, 'Té',      'caliente',  TRUE),
+(7,  'Matcha',                        'Matcha ceremonial batido con agua caliente', 2200.00, 'Té',      'caliente',  TRUE),
 (8,  'Galleta de chocolate',          'Galleta con chips de chocolate',            1900.00, 'Galleta', 'no_aplica', TRUE),
 (9,  'Galleta vegana de avena',       'Galleta de avena sin huevo ni lácteos',     2100.00, 'Galleta', 'no_aplica', TRUE),
 (10, 'Galleta sin gluten de almendras', 'Galleta de harina de almendras',          2300.00, 'Galleta', 'no_aplica', TRUE),
@@ -69,14 +69,14 @@ INSERT INTO pedido (id_pedido, id_cliente, fecha, estado, total) VALUES
 (1, 2, '2026-09-14 10:05:00', 'listo',          7700.00),
 (2, 3, '2026-09-15 16:20:00', 'listo',          8500.00),
 (3, 4, '2026-09-17 09:40:00', 'en_preparacion', 7900.00),
-(4, 2, '2026-09-18 12:10:00', 'recibido',       6700.00),
+(4, 2, '2026-09-18 12:10:00', 'recibido',       6900.00),
 (5, 3, '2026-09-19 11:00:00', 'recibido',       1800.00);
 
 INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_unitario) VALUES
 (1, 3, 2, 2900.00), (1, 8, 1, 1900.00),
 (2, 6, 1, 3300.00), (2, 11, 2, 2600.00),
 (3, 4, 2, 2900.00), (3, 9, 1, 2100.00),
-(4, 1, 1, 1800.00), (4, 7, 1, 2000.00), (4, 3, 1, 2900.00),
+(4, 1, 1, 1800.00), (4, 7, 1, 2200.00), (4, 3, 1, 2900.00),
 (5, 1, 1, 1800.00);
 
 -- Pagos (los tokens son ficticios; el sistema nunca guarda datos de tarjeta)
@@ -84,5 +84,5 @@ INSERT INTO pago (id_pago, id_pedido, monto, metodo_pago, token_transaccion, est
 (1, 1, 7700.00, 'tarjeta', 'tok_demo_0001', 'aprobado', '2026-09-14 10:05:40'),
 (2, 2, 8500.00, 'tarjeta', 'tok_demo_0002', 'aprobado', '2026-09-15 16:20:35'),
 (3, 3, 7900.00, 'tarjeta', 'tok_demo_0003', 'aprobado', '2026-09-17 09:40:50'),
-(4, 4, 6700.00, 'tarjeta', 'tok_demo_0004', 'aprobado', '2026-09-18 12:10:42'),
+(4, 4, 6900.00, 'tarjeta', 'tok_demo_0004', 'aprobado', '2026-09-18 12:10:42'),
 (5, 5, 1800.00, 'tarjeta', 'tok_demo_0005', 'aprobado', '2026-09-19 11:00:31');

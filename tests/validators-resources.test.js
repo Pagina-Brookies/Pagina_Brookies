@@ -4,7 +4,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   parsePositiveInt, parseDecimal, parseText, parseBoolean, parseEnum,
-  validateInsumoCreate, validateRestock, validateProductoCreate, validateRecetaItem, validateSell,
+  validateInsumoCreate, validateInsumoUpdate, validateRestock,
+  validateProductoCreate, validateProductoUpdate, validateRecetaItem, validateSell,
 } = require('../src/utils/validators');
 
 // ---- primitivas: casos adversariales explícitos (letras, negativos, tipos raros) ----
@@ -112,4 +113,16 @@ test('validateSell limita la cantidad a un entero razonable (1 a 500)', () => {
   assert.equal(validateSell({ cantidad: 501 }).errors.length, 1);
   assert.equal(validateSell({ cantidad: 'muchos' }).errors.length, 1);
   assert.equal(validateSell({ cantidad: 500 }).errors.length, 0);
+});
+
+test('validateInsumoUpdate (PUT) exige el recurso completo, igual que al crear', () => {
+  assert.equal(validateInsumoUpdate, validateInsumoCreate);
+  const bad = validateInsumoUpdate({ nombre: 'X', unidad_medida: 'g', stock_actual: -1, stock_minimo: 1, contiene_gluten: false, contiene_lactosa: false, es_origen_animal: false });
+  assert.equal(bad.errors.length, 1);
+});
+
+test('validateProductoUpdate (PUT) exige el recurso completo, igual que al crear', () => {
+  assert.equal(validateProductoUpdate, validateProductoCreate);
+  const bad = validateProductoUpdate({ nombre: 'X', precio: 0, categoria: 'Café', disponible: true });
+  assert.equal(bad.errors.length, 1); // precio debe ser > 0, no admite 0
 });

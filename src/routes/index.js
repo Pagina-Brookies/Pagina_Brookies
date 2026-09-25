@@ -94,6 +94,48 @@ router.get('/api/v1/products/:id', productos.getById);
 
 /**
  * @swagger
+ * /api/v1/products/{id}:
+ *   put:
+ *     tags: [Productos]
+ *     summary: Editar un producto (RF15)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/ProductoInput' }
+ *     responses:
+ *       200: { description: Producto actualizado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ *   delete:
+ *     tags: [Productos]
+ *     summary: Eliminar un producto (RF15)
+ *     description: >
+ *       Si el producto ya tiene ventas registradas (DETALLE_PEDIDO), la base de datos
+ *       rechaza el borrado (ON DELETE RESTRICT) y la API responde 409, sugiriendo marcar
+ *       el producto como no disponible en su lugar.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *     responses:
+ *       200: { description: Producto eliminado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ */
+router.put('/api/v1/products/:id', productos.update);
+router.delete('/api/v1/products/:id', productos.remove);
+
+/**
+ * @swagger
  * /api/v1/products/{id}/recipe:
  *   post:
  *     tags: [Productos]
@@ -221,6 +263,48 @@ router.post('/api/v1/supplies', insumos.create);
  *       404: { $ref: '#/components/responses/NotFound' }
  */
 router.get('/api/v1/supplies/:id', insumos.getById);
+
+/**
+ * @swagger
+ * /api/v1/supplies/{id}:
+ *   put:
+ *     tags: [Insumos]
+ *     summary: Editar un insumo (RF11)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/InsumoInput' }
+ *     responses:
+ *       200: { description: Insumo actualizado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
+ *   delete:
+ *     tags: [Insumos]
+ *     summary: Eliminar un insumo (RF11)
+ *     description: >
+ *       Si el insumo está en la receta de algún producto, la base de datos rechaza
+ *       el borrado (ON DELETE RESTRICT) y la API responde 409: hay que quitarlo de
+ *       esas recetas primero con DELETE /api/v1/products/{id}/recipe/{idInsumo}.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *     responses:
+ *       200: { description: Insumo eliminado }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
+ */
+router.put('/api/v1/supplies/:id', insumos.update);
+router.delete('/api/v1/supplies/:id', insumos.remove);
 
 /**
  * @swagger

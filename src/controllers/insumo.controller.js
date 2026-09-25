@@ -1,7 +1,7 @@
 'use strict';
 
 const Insumo = require('../models/insumo.model');
-const { parseId, validateInsumoCreate, validateRestock } = require('../utils/validators');
+const { parseId, validateInsumoCreate, validateInsumoUpdate, validateRestock } = require('../utils/validators');
 const { ok, fail } = require('../utils/respond');
 const { mapSqlError } = require('../utils/sqlErrors');
 
@@ -68,4 +68,46 @@ async function restock(req, res, next) {
   }
 }
 
-module.exports = { list, getById, create, restock };
+/** PUT /api/v1/supplies/:id — RF11: editar insumo. */
+async function update(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return fail(res, 400, { field: 'id', message: 'debe ser un entero positivo' });
+
+    const { errors, data } = validateInsumoUpdate(req.body);
+    if (errors.length > 0) return fail(res, 400, errors);
+
+    const supply = await Insumo.update(id, data);
+    if (!supply) return fail(res, 404, 'insumo no existe');
+    return ok(res, supply);
+  } catch (err) {
+    const mapped = mapSqlError(err, {
+      checkMessages: {
+        ck_insumo_stock_actual: 'el stock actual no puede ser negativo',
+        ck_insumo_stock_minimo: 'el stock mínimo no puede ser negativo',
+      },
+    });
+    if (mapped) return fail(res, mapped.status, mapped.message);
+    return next(err);
+  }
+}
+
+/** DELETE /api/v1/supplies/:id — RF11: eliminar insumo. */
+async function remove(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return fail(res, 400, { field: 'id', message: 'debe ser un entero positivo' });
+
+    const removed = await Insumo.remove(id);
+    if (!removed) return fail(res, 404, 'insumo no existe');
+    return ok(res, { id_insumo: id, eliminado: true });
+  } catch (err) {
+    const mapped = mapSqlError(err, {
+      restrictMessage: 'no se puede eliminar: está en la receta de uno o más productos. Quítelo de esas recetas primero.',
+    });
+    if (mapped) return fail(res, mapped.status, mapped.message);
+    return next(err);
+  }
+}
+
+module.exports = { list, getById, create, restock, update, remove };

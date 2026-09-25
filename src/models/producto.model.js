@@ -142,4 +142,27 @@ async function sellByRecipe(idProducto, cantidad) {
   return result.affectedRows; // 0 => el producto no existe o no tiene receta
 }
 
-module.exports = { findAll, findById, create, addRecipeItem, removeRecipeItem, sellByRecipe };
+/** RF15 — editar un producto (reemplazo completo de los campos editables). Devuelve null si no existe. */
+async function update(id, data) {
+  const result = await db.execute(
+    `UPDATE producto
+     SET nombre = ?, descripcion = ?, precio = ?, categoria = ?, tipo_preparacion = ?, disponible = ?
+     WHERE id_producto = ?`,
+    [data.nombre, data.descripcion, data.precio, data.categoria, data.tipo_preparacion, data.disponible, id]
+  );
+  if (result.affectedRows === 0) return null;
+  return findById(id);
+}
+
+/**
+ * RF15 — eliminar un producto. Si ya tiene ventas registradas, la FK
+ * (DETALLE_PEDIDO.id_producto, ON DELETE RESTRICT) rechaza el DELETE, según
+ * el supuesto del proyecto: un producto vendido no se elimina, se marca
+ * disponible = false (con PUT).
+ */
+async function remove(id) {
+  const result = await db.execute('DELETE FROM producto WHERE id_producto = ?', [id]);
+  return result.affectedRows > 0;
+}
+
+module.exports = { findAll, findById, create, update, remove, addRecipeItem, removeRecipeItem, sellByRecipe };

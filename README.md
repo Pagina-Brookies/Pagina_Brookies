@@ -95,12 +95,16 @@ desde el navegador, con el botón "Try it out". El JSON crudo del spec está en 
 | GET | `/api/v1/products` | Consulta de productos con filtros (RF04) |
 | GET | `/api/v1/products/:id` | Un producto con su receta |
 | POST | `/api/v1/products` | Agregar un producto al menú (RF15) |
+| PUT | `/api/v1/products/:id` | Editar un producto (RF15) |
+| DELETE | `/api/v1/products/:id` | Eliminar un producto (RF15); bloqueado (409) si ya tiene ventas registradas |
 | POST | `/api/v1/products/:id/recipe` | Agregar o actualizar un insumo en la receta (RF12) |
 | DELETE | `/api/v1/products/:id/recipe/:idInsumo` | Quitar un insumo de la receta (RF12) |
 | POST | `/api/v1/products/:id/sell` | Descontar insumos según receta al vender (RF10) |
 | GET | `/api/v1/supplies?critical=true` | Inventario de insumos (RF11); solo críticos con `critical=true` (RF13) |
 | GET | `/api/v1/supplies/:id` | Un insumo |
 | POST | `/api/v1/supplies` | Registrar un insumo (RF11) |
+| PUT | `/api/v1/supplies/:id` | Editar un insumo (RF11) |
+| DELETE | `/api/v1/supplies/:id` | Eliminar un insumo (RF11); bloqueado (409) si está en alguna receta |
 | PATCH | `/api/v1/supplies/:id/restock` | Reabastecer stock (RF14) |
 | GET | `/api/v1/reports/top-products` | Productos más vendidos (RF16, consulta 04) |
 | GET | `/api/v1/reports/critical-supplies` | Insumos críticos y sus productos (RF16, consulta 05) |

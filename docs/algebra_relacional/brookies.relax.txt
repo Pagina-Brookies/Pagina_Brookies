@@ -1,4 +1,5 @@
-group: Brookies Coffee
+group:Brookies Coffee
+description:Datos de prueba — Brookies Coffee (Grupo 20, ICI-324). Corresponde a migrations/002_seed.sql.
 
 producto = {
     id_producto, nombre, descripcion, precio, categoria, tipo_preparacion, disponible
@@ -8,7 +9,7 @@ producto = {
     4, 'Cappuccino', 'Espresso con leche y espuma', 2900, 'Café', 'caliente', 1
     5, 'Latte de avena', 'Espresso con leche de avena', 3200, 'Café', 'caliente', 1
     6, 'Cold brew', 'Café de extracción en frío con hielo', 3300, 'Café', 'frio', 1
-    7, 'Té verde', 'Infusión de té verde', 2000, 'Té', 'caliente', 1
+    7, 'Matcha', 'Matcha ceremonial batido con agua caliente', 2200, 'Té', 'caliente', 1
     8, 'Galleta de chocolate', 'Galleta con chips de chocolate', 1900, 'Galleta', 'no_aplica', 1
     9, 'Galleta vegana de avena', 'Galleta de avena sin huevo ni lácteos', 2100, 'Galleta', 'no_aplica', 1
     10, 'Galleta sin gluten de almendras', 'Galleta de harina de almendras', 2300, 'Galleta', 'no_aplica', 1
@@ -26,7 +27,7 @@ insumo = {
     6, 'Mantequilla', 'g', 2400, 800, 0, 1, 1
     7, 'Huevos', 'unidad', 20, 24, 0, 0, 1
     8, 'Chips de chocolate', 'g', 2200, 500, 0, 0, 0
-    9, 'Té verde en hebras', 'g', 90, 100, 0, 0, 0
+    9, 'Matcha en polvo', 'g', 90, 100, 0, 0, 0
     10, 'Harina de almendras', 'g', 1500, 400, 0, 0, 0
     11, 'Aceite vegetal', 'ml', 1800, 500, 0, 0, 0
     12, 'Avena en hojuelas', 'g', 2500, 500, 1, 0, 0
@@ -71,7 +72,7 @@ pedido = {
     1, 2, '2026-09-14 10:05:00', 'listo', 7700
     2, 3, '2026-09-15 16:20:00', 'listo', 8500
     3, 4, '2026-09-17 09:40:00', 'en_preparacion', 7900
-    4, 2, '2026-09-18 12:10:00', 'recibido', 6700
+    4, 2, '2026-09-18 12:10:00', 'recibido', 6900
     5, 3, '2026-09-19 11:00:00', 'recibido', 1800
 }
 
@@ -85,7 +86,7 @@ detalle_pedido = {
     3, 9, 1, 2100
     4, 1, 1, 1800
     4, 3, 1, 2900
-    4, 7, 1, 2000
+    4, 7, 1, 2200
     5, 1, 1, 1800
 }
 
@@ -94,6 +95,6 @@ pago = {
     1, 1, 7700, 'tarjeta', 'tok_demo_0001', 'aprobado', '2026-09-14 10:05:40'
     2, 2, 8500, 'tarjeta', 'tok_demo_0002', 'aprobado', '2026-09-15 16:20:35'
     3, 3, 7900, 'tarjeta', 'tok_demo_0003', 'aprobado', '2026-09-17 09:40:50'
-    4, 4, 6700, 'tarjeta', 'tok_demo_0004', 'aprobado', '2026-09-18 12:10:42'
+    4, 4, 6900, 'tarjeta', 'tok_demo_0004', 'aprobado', '2026-09-18 12:10:42'
     5, 5, 1800, 'tarjeta', 'tok_demo_0005', 'aprobado', '2026-09-19 11:00:31'
 }

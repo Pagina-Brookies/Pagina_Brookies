@@ -24,7 +24,11 @@ function literal(v) {
 async function main() {
   const conn = await mysql.createConnection(getConnectionConfig());
   try {
-    const lines = ['group: Brookies Coffee', ''];
+    const lines = [
+      'group:Brookies Coffee',
+      'description:Datos de prueba — Brookies Coffee (Grupo 20, ICI-324). Corresponde a migrations/002_seed.sql.',
+      '',
+    ];
     for (const table of TABLES) {
       const [rows] = await conn.query(`SELECT * FROM \`${table}\``);
       const cols = Object.keys(rows[0]);
