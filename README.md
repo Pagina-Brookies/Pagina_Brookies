@@ -18,6 +18,7 @@ Proyecto del ramo **ICI-324 Bases de Datos y Programación Web** (Universidad de
 Para comprobar que está arriba, desde cualquier computador (no hace falta el nuestro):
 - https://brookies-coffee-api.onrender.com/health → estado de la app y de la base
 - https://brookies-coffee-api.onrender.com/api/v1/products → menú con filtros
+- https://brookies-coffee-api.onrender.com/api-docs → documentación interactiva (Swagger)
 
 > **Nota:** el plan gratuito de Render "duerme" el servicio después de 15 minutos sin tráfico.
 > La primera petición después de eso puede demorar hasta un minuto en responder mientras despierta;
@@ -86,8 +87,9 @@ Las consultas SELECT (03, 04 y 05) están en álgebra relacional en `docs/algebr
 
 ## API
 
-Documentación interactiva (Swagger / OpenAPI) en `/api-docs` — se puede probar cada endpoint
-desde el navegador, con el botón "Try it out". El JSON crudo del spec está en `/api-docs.json`.
+Documentación interactiva (Swagger / OpenAPI): https://brookies-coffee-api.onrender.com/api-docs
+— se puede probar cada endpoint desde el navegador, con el botón "Try it out". El JSON crudo del
+spec está en https://brookies-coffee-api.onrender.com/api-docs.json
 
 | Método | Ruta | Descripción |
 |---|---|---|
