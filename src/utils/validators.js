@@ -4,6 +4,19 @@ const SUITABLE_FOR = ['sin_gluten', 'sin_lactosa', 'vegano'];
 const PREPARATION = ['caliente', 'frio', 'no_aplica'];
 const SORT = ['precio', 'mas_vendido'];
 const CATEGORIES = ['Café', 'Té', 'Galleta'];
+const UNITS = ['g', 'kg', 'ml', 'l', 'unidad'];
+
+/** Quita tildes y pasa a minúsculas, para comparar sin importar cómo se escribió ("cafe" = "Café"). */
+function normalize(text) {
+  return String(text).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Devuelve el valor oficial de la lista si coincide sin importar mayúsculas ni tildes; si no, null. */
+function parseLooseEnum(value, allowed) {
+  if (typeof value !== 'string') return null;
+  const n = normalize(value);
+  return allowed.find((a) => normalize(a) === n) || null;
+}
 
 // ------------------------------------------------------------------------
 // Primitivas de validación. Se usan en el cuerpo (JSON) y en la query
@@ -39,12 +52,14 @@ function parseDecimal(value, { allowZero = false, max = 99999999.99 } = {}) {
   let n;
   if (typeof value === 'number') {
     n = value;
-  } else if (typeof value === 'string' && /^-?\d+(\.\d{1,4})?$/.test(value.trim())) {
+  } else if (typeof value === 'string' && /^-?\d+(\.\d{1,2})?$/.test(value.trim())) {
     n = Number(value.trim());
   } else {
     return null;
   }
   if (!Number.isFinite(n)) return null;
+  // más de 2 decimales (ej. 16.999) se rechaza: la columna es DECIMAL(10,2)
+  if (Math.abs(n * 100 - Math.round(n * 100)) > 1e-7) return null;
   if (allowZero ? n < 0 : n <= 0) return null;
   if (n > max) return null;
   return Math.round(n * 100) / 100;
@@ -89,11 +104,16 @@ function parseProductQuery(query = {}) {
   };
 
   if (query.category !== undefined) {
-    const v = String(query.category).trim();
-    if (v.length === 0 || v.length > 50) {
-      errors.push({ field: 'category', message: 'debe tener entre 1 y 50 caracteres' });
+    const raw = String(query.category);
+    if (normalize(raw) === 'todas') {
+      filters.category = 'todas';
     } else {
-      filters.category = v;
+      const c = parseLooseEnum(raw, CATEGORIES);
+      if (c === null) {
+        errors.push({ field: 'category', message: `debe ser una de: todas, ${CATEGORIES.join(', ')}` });
+      } else {
+        filters.category = c;
+      }
     }
   }
 
@@ -166,8 +186,8 @@ function validateInsumoCreate(body = {}) {
   out.nombre = parseText(body.nombre, { maxLen: 100 });
   if (out.nombre === null) errors.push({ field: 'nombre', message: 'texto requerido, de 1 a 100 caracteres' });
 
-  out.unidad_medida = parseText(body.unidad_medida, { maxLen: 20 });
-  if (out.unidad_medida === null) errors.push({ field: 'unidad_medida', message: 'texto requerido, de 1 a 20 caracteres (ej. g, ml, unidad)' });
+  out.unidad_medida = parseLooseEnum(body.unidad_medida, UNITS);
+  if (out.unidad_medida === null) errors.push({ field: 'unidad_medida', message: `debe ser una de: ${UNITS.join(', ')}` });
 
   out.stock_actual = parseDecimal(body.stock_actual, { allowZero: true });
   if (out.stock_actual === null) errors.push({ field: 'stock_actual', message: 'debe ser un número mayor o igual a 0, con máximo 2 decimales' });
@@ -210,10 +230,10 @@ function validateProductoCreate(body = {}) {
   out.precio = parseDecimal(body.precio);
   if (out.precio === null) errors.push({ field: 'precio', message: 'debe ser un número mayor a 0, con máximo 2 decimales' });
 
-  out.categoria = parseEnum(body.categoria, CATEGORIES);
+  out.categoria = parseLooseEnum(body.categoria, CATEGORIES);
   if (out.categoria === null) errors.push({ field: 'categoria', message: `debe ser una de: ${CATEGORIES.join(', ')}` });
 
-  out.tipo_preparacion = body.tipo_preparacion === undefined ? 'no_aplica' : parseEnum(body.tipo_preparacion, PREPARATION);
+  out.tipo_preparacion = body.tipo_preparacion === undefined ? 'no_aplica' : parseLooseEnum(body.tipo_preparacion, PREPARATION);
   if (out.tipo_preparacion === null) errors.push({ field: 'tipo_preparacion', message: `debe ser uno de: ${PREPARATION.join(', ')}` });
 
   out.disponible = parseBoolean(body.disponible);
@@ -249,5 +269,5 @@ module.exports = {
   // PUT reemplaza el recurso completo, así que exige los mismos campos que crear uno nuevo.
   validateInsumoUpdate: validateInsumoCreate,
   validateProductoUpdate: validateProductoCreate,
-  CATEGORIES, PREPARATION, SUITABLE_FOR,
+  CATEGORIES, PREPARATION, SUITABLE_FOR, UNITS, normalize, parseLooseEnum,
 };

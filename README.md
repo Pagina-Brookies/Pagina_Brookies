@@ -117,17 +117,38 @@ la receta), `name`, `suitable_for` (`sin_gluten`, `sin_lactosa`, `vegano`), `pre
 
 Ejemplo: `GET /api/v1/products?category=Galleta&suitable_for=vegano&sort=precio`
 
-Todas las respuestas tienen la misma forma: `{ "data": ..., "errors": [] }`. Los errores de datos devuelven 400,
-lo que no existe 404, un conflicto de negocio (por ejemplo, una venta que dejaría un insumo con stock negativo) 422,
-y las fallas internas 500 con un mensaje genérico.
+Cada producto trae además `apto_para` (por ejemplo `["sin_gluten", "vegano"]`), calculado desde los insumos de su receta.
+
+Todas las respuestas tienen la misma forma: `{ "data": ..., "errors": [] }`. Códigos que usa la API:
+
+| Código | Cuándo |
+|---|---|
+| 400 | Datos inválidos: negativos, texto en campos numéricos, valores fuera de lista, más de 2 decimales, JSON mal escrito |
+| 404 | El recurso no existe |
+| 409 | Nombre repetido, o borrar algo que está en uso (insumo en una receta, producto con ventas) |
+| 413 | Cuerpo de la petición demasiado grande |
+| 422 | Regla de negocio: vender sin stock suficiente, vender un producto no disponible o sin receta, desbordar el stock |
+| 503 | La base de datos no está disponible (por ejemplo, Aiven apagado por inactividad) |
+| 500 | Error inesperado; el detalle queda en el registro del servidor |
 
 ### Validación de entradas
 
-Todos los endpoints de escritura (`POST`, `PATCH`, `DELETE`) validan cada campo antes de tocar la base de datos:
-números negativos, texto donde va un número, booleanos mal tipados (`"true"` en vez de `true`), valores fuera de una
-lista fija (categoría, tipo de preparación), campos faltantes y textos vacíos o demasiado largos se rechazan con 400
-y un detalle por campo. `npm test` incluye casos adversariales para cada validador
-(`tests/validators-resources.test.js`).
+Todos los endpoints de escritura (`POST`, `PUT`, `PATCH`, `DELETE`) validan cada campo antes de tocar la base de datos:
+números negativos, texto donde va un número, más de 2 decimales, booleanos mal tipados (`"true"` en vez de `true`),
+valores fuera de una lista fija, campos faltantes y textos vacíos o demasiado largos se rechazan con 400 y un detalle
+por campo. Listas fijas: categoría (`Café`, `Té`, `Galleta`), tipo de preparación (`caliente`, `frio`, `no_aplica`) y
+unidad de medida (`g`, `kg`, `ml`, `l`, `unidad`); se aceptan sin importar mayúsculas ni tildes (`cafe` se guarda como
+`Café`). Los nombres de productos e insumos no pueden repetirse.
+
+Dos formas de probarlo:
+
+```bash
+npm test            # pruebas unitarias de cada validador
+npm run test:api    # recorre la API con ~87 casos válidos e inválidos (requiere el servidor corriendo)
+API_URL=https://brookies-coffee-api.onrender.com npm run test:api   # lo mismo, contra producción
+```
+
+`test:api` borra al final todo lo que crea para probar; no vende ni reabastece con éxito, así que no cambia el stock.
 
 La consulta 07 (descontar insumos según receta) se ejecuta como una sola sentencia `UPDATE ... JOIN`: si la venta
 dejaría algún insumo bajo cero, la restricción `CHECK` de la base de datos rechaza el `UPDATE` completo — ningún
@@ -147,7 +168,7 @@ src/
   middleware/   errores y rutas no encontradas
   utils/        validación, formato de respuestas y traducción de errores de MySQL (sqlErrors.js)
   views/        vacía por ahora (Etapa 2)
-scripts/        migrar la base, ejecutar las consultas, exportar a RelaX
+scripts/        migrar la base, ejecutar las consultas, exportar a RelaX, probar la API (api_check.js)
 tests/          pruebas unitarias (npm test)
 docs/           informe, diagramas, diccionario, álgebra relacional y resultados
 ```

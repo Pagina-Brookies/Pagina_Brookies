@@ -32,7 +32,9 @@ test('parseDecimal rechaza negativos salvo allowZero, y rechaza texto no numéri
   assert.equal(parseDecimal(-1, { allowZero: true }), null); // allowZero no habilita negativos
   assert.equal(parseDecimal(16), 16);
   assert.equal(parseDecimal('16.5'), 16.5);
-  assert.equal(parseDecimal(16.999), 17); // redondea a 2 decimales
+  assert.equal(parseDecimal(16.25), 16.25);
+  assert.equal(parseDecimal(16.999), null); // más de 2 decimales se rechaza, no se redondea en silencio
+  assert.equal(parseDecimal('16.999'), null);
 });
 
 test('parseDecimal rechaza valores por sobre el máximo de un DECIMAL(10,2)', () => {
@@ -125,4 +127,31 @@ test('validateProductoUpdate (PUT) exige el recurso completo, igual que al crear
   assert.equal(validateProductoUpdate, validateProductoCreate);
   const bad = validateProductoUpdate({ nombre: 'X', precio: 0, categoria: 'Café', disponible: true });
   assert.equal(bad.errors.length, 1); // precio debe ser > 0, no admite 0
+});
+
+// ---- casos agregados tras las pruebas manuales en Swagger ----
+const { parseProductQuery, parseLooseEnum, UNITS, CATEGORIES } = require('../src/utils/validators');
+
+test('unidad_medida solo acepta la lista cerrada (g, kg, ml, l, unidad)', () => {
+  const base = { nombre: 'X', stock_actual: 1, stock_minimo: 1, contiene_gluten: false, contiene_lactosa: false, es_origen_animal: false };
+  for (const bad of ['a', 'litros', '', '-1', 5, null]) {
+    const { errors } = validateInsumoCreate({ ...base, unidad_medida: bad });
+    assert.ok(errors.some((e) => e.field === 'unidad_medida'), `debía rechazar ${JSON.stringify(bad)}`);
+  }
+  assert.equal(validateInsumoCreate({ ...base, unidad_medida: 'ML' }).data.unidad_medida, 'ml');
+  assert.deepEqual(UNITS, ['g', 'kg', 'ml', 'l', 'unidad']);
+});
+
+test('categoría acepta mayúsculas y sin tilde, pero guarda el valor oficial', () => {
+  assert.equal(parseLooseEnum('cafe', CATEGORIES), 'Café');
+  assert.equal(parseLooseEnum('CAFÉ', CATEGORIES), 'Café');
+  assert.equal(parseLooseEnum(' te ', CATEGORIES), 'Té');
+  assert.equal(parseLooseEnum('-1', CATEGORIES), null);
+  assert.equal(parseLooseEnum('Bebida', CATEGORIES), null);
+});
+
+test('el filtro category de la consulta rechaza categorías inexistentes', () => {
+  assert.equal(parseProductQuery({ category: 'Bebida' }).errors[0].field, 'category');
+  assert.equal(parseProductQuery({ category: 'galleta' }).filters.category, 'Galleta');
+  assert.equal(parseProductQuery({ category: 'TODAS' }).filters.category, 'todas');
 });

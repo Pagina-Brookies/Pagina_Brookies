@@ -1,6 +1,6 @@
 # Diccionario de datos
 
-Coincide con `migrations/001_schema.sql`. En MySQL los nombres de las tablas van en minúscula (por ejemplo `detalle_pedido`).
+Coincide con `migrations/001_schema.sql`. En MySQL los nombres de las tablas van en minúscula (por ejemplo `detalle_pedido`). Las restricciones marcadas como "validado en la aplicación" las aplica el backend antes de escribir en la base.
 
 ## USUARIO
 
@@ -35,10 +35,10 @@ Coincide con `migrations/001_schema.sql`. En MySQL los nombres de las tablas van
 | Atributo | PK/FK | Tipo de dato | NULL / NOT NULL | Valor por defecto | Restricciones / Observaciones |
 |---|---|---|---|---|---|
 | id_producto | PK | INT | NOT NULL | AUTO_INCREMENT | — |
-| nombre | — | VARCHAR(100) | NOT NULL | — | — |
+| nombre | — | VARCHAR(100) | NOT NULL | — | No puede repetirse (validado en la aplicación) |
 | descripcion | — | VARCHAR(300) | NULL | — | — |
 | precio | — | DECIMAL(10,2) | NOT NULL | — | CHECK (precio > 0) |
-| categoria | — | VARCHAR(50) | NOT NULL | — | — |
+| categoria | — | VARCHAR(50) | NOT NULL | — | Solo Café, Té o Galleta (validado en la aplicación, sin distinguir mayúsculas ni tildes) |
 | tipo_preparacion | — | VARCHAR(20) | NOT NULL | 'no_aplica' | CHECK IN (caliente, frio, no_aplica). Las galletas usan no_aplica |
 | disponible | — | BOOLEAN | NOT NULL | TRUE | Marca del administrador: el producto está en el menú. La disponibilidad efectiva exige además stock suficiente para su receta |
 
@@ -47,8 +47,8 @@ Coincide con `migrations/001_schema.sql`. En MySQL los nombres de las tablas van
 | Atributo | PK/FK | Tipo de dato | NULL / NOT NULL | Valor por defecto | Restricciones / Observaciones |
 |---|---|---|---|---|---|
 | id_insumo | PK | INT | NOT NULL | AUTO_INCREMENT | — |
-| nombre | — | VARCHAR(100) | NOT NULL | — | — |
-| unidad_medida | — | VARCHAR(20) | NOT NULL | — | — |
+| nombre | — | VARCHAR(100) | NOT NULL | — | No puede repetirse (validado en la aplicación) |
+| unidad_medida | — | VARCHAR(20) | NOT NULL | — | Solo g, kg, ml, l o unidad (validado en la aplicación) |
 | stock_actual | — | DECIMAL(10,2) | NOT NULL | 0 | CHECK (stock_actual >= 0) |
 | stock_minimo | — | DECIMAL(10,2) | NOT NULL | — | CHECK (stock_minimo >= 0) |
 | contiene_gluten | — | BOOLEAN | NOT NULL | FALSE | Base del filtro «sin gluten» |

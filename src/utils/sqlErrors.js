@@ -25,6 +25,8 @@ function mapSqlError(err, context = {}) {
       return { status: 409, message: context.restrictMessage || 'no se puede eliminar: está en uso por otro registro' };
     case 'ER_DUP_ENTRY':
       return { status: 409, message: context.dupMessage || 'ya existe un registro con ese valor único' };
+    case 'ER_WARN_DATA_OUT_OF_RANGE':
+      return { status: 422, message: 'el valor resultante excede el máximo que la base de datos puede guardar' };
     case 'ER_DATA_TOO_LONG':
       return { status: 400, message: 'un valor supera el largo permitido para ese campo' };
     case 'ER_BAD_NULL_ERROR':

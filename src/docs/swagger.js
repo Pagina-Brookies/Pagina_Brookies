@@ -13,9 +13,10 @@ const definition = {
       'Todas las respuestas comparten la forma `{ "data": ..., "errors": [] }`, tanto en éxito como en error.',
     contact: { name: 'Grupo 20 — Felipe Hernández, Simón Reyes' },
   },
+  // Producción va primero para que Swagger la use por defecto al abrir /api-docs.
   servers: [
-    { url: 'http://localhost:{port}', description: 'Local', variables: { port: { default: '3000' } } },
     { url: 'https://brookies-coffee-api.onrender.com', description: 'Producción (Render)' },
+    { url: 'http://localhost:{port}', description: 'Local', variables: { port: { default: '3000' } } },
   ],
   tags: [
     { name: 'Productos', description: 'Menú, receta y venta con descuento de inventario (RF04, RF10, RF12, RF15)' },
@@ -50,6 +51,11 @@ const definition = {
           tipo_preparacion: { type: 'string', enum: ['caliente', 'frio', 'no_aplica'], example: 'caliente' },
           disponible: { type: 'boolean', example: true },
           disponible_efectivo: { type: 'boolean', example: true, description: 'disponible además de tener stock suficiente en su receta' },
+          apto_para: {
+            type: 'array', items: { type: 'string', enum: ['sin_gluten', 'sin_lactosa', 'vegano'] },
+            example: ['sin_gluten', 'vegano'],
+            description: 'calculado desde los insumos de la receta: ninguno contiene gluten / lactosa / origen animal',
+          },
         },
       },
       ProductoInput: {
@@ -96,7 +102,7 @@ const definition = {
         required: ['nombre', 'unidad_medida', 'stock_actual', 'stock_minimo', 'contiene_gluten', 'contiene_lactosa', 'es_origen_animal'],
         properties: {
           nombre: { type: 'string', maxLength: 100, example: 'Sirope de caramelo' },
-          unidad_medida: { type: 'string', maxLength: 20, example: 'ml' },
+          unidad_medida: { type: 'string', enum: ['g', 'kg', 'ml', 'l', 'unidad'], example: 'ml' },
           stock_actual: { type: 'number', minimum: 0, example: 3000 },
           stock_minimo: { type: 'number', minimum: 0, example: 500 },
           contiene_gluten: { type: 'boolean', example: false },
@@ -114,6 +120,7 @@ const definition = {
       BadRequest: { description: 'Datos inválidos', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       NotFound: { description: 'No existe', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       Conflict: { description: 'Conflicto con el estado actual de los datos', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+      ServiceUnavailable: { description: 'La base de datos no está disponible en este momento', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
       Unprocessable: { description: 'No se pudo aplicar la operación (restricción de negocio o de la base de datos)', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
     },
   },

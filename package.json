@@ -15,7 +15,8 @@
     "queries": "node scripts/run_queries.js",
     "queries:md": "node scripts/run_queries.js --md",
     "export:relax": "node scripts/export_relax.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:api": "node scripts/api_check.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

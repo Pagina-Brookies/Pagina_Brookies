@@ -37,6 +37,7 @@ async function create(req, res, next) {
   try {
     const { errors, data } = validateProductoCreate(req.body);
     if (errors.length > 0) return fail(res, 400, errors);
+    if (await Producto.nameExists(data.nombre)) return fail(res, 409, `ya existe un producto llamado "${data.nombre}"`);
     const product = await Producto.create(data);
     return ok(res, product, 201);
   } catch (err) {
@@ -97,6 +98,7 @@ async function sell(req, res, next) {
 
     const product = await Producto.findById(id);
     if (!product) return fail(res, 404, 'producto no existe');
+    if (!product.disponible) return fail(res, 422, 'el producto está marcado como no disponible en el menú; no se puede vender');
     if (!product.receta || product.receta.length === 0) {
       return fail(res, 422, 'el producto no tiene una receta definida; no se puede descontar inventario');
     }
@@ -121,6 +123,7 @@ async function update(req, res, next) {
 
     const { errors, data } = validateProductoUpdate(req.body);
     if (errors.length > 0) return fail(res, 400, errors);
+    if (await Producto.nameExists(data.nombre, id)) return fail(res, 409, `ya existe otro producto llamado "${data.nombre}"`);
 
     const product = await Producto.update(id, data);
     if (!product) return fail(res, 404, 'producto no existe');

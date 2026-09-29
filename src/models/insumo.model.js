@@ -70,6 +70,12 @@ async function remove(id) {
   return result.affectedRows > 0;
 }
 
+/** true si ya existe otro insumo con ese nombre (la comparación ignora mayúsculas y tildes). */
+async function nameExists(nombre, exceptId = 0) {
+  const rows = await db.execute('SELECT 1 FROM insumo WHERE nombre = ? AND id_insumo <> ? LIMIT 1', [nombre, exceptId]);
+  return rows.length > 0;
+}
+
 function toInsumo(r) {
   return {
     ...r,
@@ -80,4 +86,4 @@ function toInsumo(r) {
   };
 }
 
-module.exports = { findAll, findById, create, restock, update, remove };
+module.exports = { findAll, findById, create, restock, update, remove, nameExists };

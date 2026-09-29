@@ -22,16 +22,36 @@ const SUITABLE_FLAG = {
   vegano: 'es_origen_animal',
 };
 
+// Un producto es apto para X si ningún insumo de su receta tiene la marca correspondiente.
+const aptoPara = (flag) => `NOT EXISTS (
+    SELECT 1 FROM receta ra JOIN insumo ia ON ia.id_insumo = ra.id_insumo
+    WHERE ra.id_producto = p.id_producto AND ia.${flag} = TRUE)`;
+
 const SELECT_COLUMNS = `
     p.id_producto, p.nombre, p.descripcion, p.precio, p.categoria, p.tipo_preparacion,
-    p.disponible, ${EFFECTIVE_AVAILABLE} AS disponible_efectivo`;
+    p.disponible, ${EFFECTIVE_AVAILABLE} AS disponible_efectivo,
+    ${aptoPara('contiene_gluten')} AS apto_sin_gluten,
+    ${aptoPara('contiene_lactosa')} AS apto_sin_lactosa,
+    ${aptoPara('es_origen_animal')} AS apto_vegano`;
 
 function toProduct(row) {
+  const { apto_sin_gluten, apto_sin_lactosa, apto_vegano, ...rest } = row;
+  const apto_para = [];
+  if (apto_sin_gluten) apto_para.push('sin_gluten');
+  if (apto_sin_lactosa) apto_para.push('sin_lactosa');
+  if (apto_vegano) apto_para.push('vegano');
   return {
-    ...row,
+    ...rest,
     disponible: Boolean(row.disponible),
     disponible_efectivo: Boolean(row.disponible_efectivo),
+    apto_para,
   };
+}
+
+/** true si ya existe otro producto con ese nombre (la comparación ignora mayúsculas y tildes). */
+async function nameExists(nombre, exceptId = 0) {
+  const rows = await db.execute('SELECT 1 FROM producto WHERE nombre = ? AND id_producto <> ? LIMIT 1', [nombre, exceptId]);
+  return rows.length > 0;
 }
 
 /**
@@ -165,4 +185,4 @@ async function remove(id) {
   return result.affectedRows > 0;
 }
 
-module.exports = { findAll, findById, create, update, remove, addRecipeItem, removeRecipeItem, sellByRecipe };
+module.exports = { findAll, findById, create, update, remove, addRecipeItem, removeRecipeItem, sellByRecipe, nameExists };

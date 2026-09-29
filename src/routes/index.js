@@ -29,8 +29,8 @@ router.get('/health', health.check);
  *     parameters:
  *       - in: query
  *         name: category
- *         schema: { type: string, default: todas }
- *         description: Café, Té, Galleta o todas
+ *         schema: { type: string, enum: [todas, Café, Té, Galleta], default: todas }
+ *         description: No distingue mayúsculas ni tildes (cafe = Café)
  *       - in: query
  *         name: available
  *         schema: { type: boolean, default: true }
@@ -69,6 +69,7 @@ router.get('/health', health.check);
  *       201:
  *         description: Producto creado
  *       400: { $ref: '#/components/responses/BadRequest' }
+ *       409: { $ref: '#/components/responses/Conflict' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  */
 router.get('/api/v1/products', productos.list);
@@ -112,6 +113,7 @@ router.get('/api/v1/products/:id', productos.getById);
  *       200: { description: Producto actualizado }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  *   delete:
  *     tags: [Productos]
@@ -241,6 +243,7 @@ router.post('/api/v1/products/:id/sell', productos.sell);
  *     responses:
  *       201: { description: Insumo creado }
  *       400: { $ref: '#/components/responses/BadRequest' }
+ *       409: { $ref: '#/components/responses/Conflict' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  */
 router.get('/api/v1/supplies', insumos.list);
@@ -284,6 +287,7 @@ router.get('/api/v1/supplies/:id', insumos.getById);
  *       200: { description: Insumo actualizado }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       404: { $ref: '#/components/responses/NotFound' }
+ *       409: { $ref: '#/components/responses/Conflict' }
  *       422: { $ref: '#/components/responses/Unprocessable' }
  *   delete:
  *     tags: [Insumos]
@@ -326,6 +330,7 @@ router.delete('/api/v1/supplies/:id', insumos.remove);
  *       200: { description: Stock actualizado }
  *       400: { $ref: '#/components/responses/BadRequest' }
  *       404: { $ref: '#/components/responses/NotFound' }
+ *       422: { $ref: '#/components/responses/Unprocessable' }
  */
 router.patch('/api/v1/supplies/:id/restock', insumos.restock);
 

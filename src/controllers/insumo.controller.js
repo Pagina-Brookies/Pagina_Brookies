@@ -37,6 +37,7 @@ async function create(req, res, next) {
   try {
     const { errors, data } = validateInsumoCreate(req.body);
     if (errors.length > 0) return fail(res, 400, errors);
+    if (await Insumo.nameExists(data.nombre)) return fail(res, 409, `ya existe un insumo llamado "${data.nombre}"`);
     const supply = await Insumo.create(data);
     return ok(res, supply, 201);
   } catch (err) {
@@ -64,6 +65,8 @@ async function restock(req, res, next) {
     if (!supply) return fail(res, 404, 'insumo no existe');
     return ok(res, supply);
   } catch (err) {
+    const mapped = mapSqlError(err);
+    if (mapped) return fail(res, mapped.status, mapped.message);
     return next(err);
   }
 }
@@ -76,6 +79,7 @@ async function update(req, res, next) {
 
     const { errors, data } = validateInsumoUpdate(req.body);
     if (errors.length > 0) return fail(res, 400, errors);
+    if (await Insumo.nameExists(data.nombre, id)) return fail(res, 409, `ya existe otro insumo llamado "${data.nombre}"`);
 
     const supply = await Insumo.update(id, data);
     if (!supply) return fail(res, 404, 'insumo no existe');
