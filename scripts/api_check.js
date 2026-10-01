@@ -48,6 +48,28 @@ async function expect(label, expected, method, path, body, rawBody) {
   return r;
 }
 
+// Casos con texto de ataque (inyección SQL). En producción hay un firewall (Cloudflare) delante de Render que
+// puede bloquearlos con un 403 antes de que lleguen a la API: eso también es una respuesta segura.
+async function expectInjection(label, expected, method, path) {
+  const res = await fetch(BASE + path, { method });
+  let json = null;
+  try { json = await res.json(); } catch { /* respuesta que no es JSON */ }
+  const shapeOk = json && 'data' in json && Array.isArray(json.errors);
+  const blockedByEdge = res.status === 403 && !shapeOk && Boolean(res.headers.get('cf-ray'));
+  if (shapeOk && res.status === expected) {
+    pass++;
+    console.log(`  ok   ${String(res.status).padEnd(3)} ${label}`);
+  } else if (blockedByEdge) {
+    pass++;
+    console.log(`  ok   403 ${label}  (bloqueada por el firewall de Cloudflare antes de llegar a la API)`);
+  } else {
+    failCount++;
+    const why = !shapeOk ? `llegó ${res.status} sin la forma {data, errors}` : `esperaba ${expected}, llegó ${res.status}`;
+    failures.push(`${label} — ${why}`);
+    console.log(`  FALLA ${String(res.status).padEnd(3)} ${label}  (${why})`);
+  }
+}
+
 const validSupply = (over = {}) => ({
   nombre: `${TAG} insumo`, unidad_medida: 'g', stock_actual: 100, stock_minimo: 10,
   contiene_gluten: false, contiene_lactosa: false, es_origen_animal: false, ...over,
@@ -78,7 +100,7 @@ async function main() {
   await expect('sort=barato', 400, 'GET', '/api/v1/products?sort=barato');
   await expect('name de 101 caracteres', 400, 'GET', `/api/v1/products?name=${'a'.repeat(101)}`);
   await expect('name con % (no rompe el LIKE)', 200, 'GET', '/api/v1/products?name=%25');
-  await expect('name con intento de inyección', 200, 'GET', `/api/v1/products?name=${encodeURIComponent("' OR 1=1 --")}`);
+  await expectInjection('name con intento de inyección', 200, 'GET', `/api/v1/products?name=${encodeURIComponent("' OR 1=1 --")}`);
   const veg = await expect('vegano + caliente + precio', 200, 'GET', '/api/v1/products?suitable_for=vegano&preparation=caliente&sort=precio');
   if (veg.json && Array.isArray(veg.json.data)) {
     const wrong = veg.json.data.filter((p) => !(p.apto_para || []).includes('vegano'));
@@ -94,7 +116,7 @@ async function main() {
   await expect('id=-5', 400, 'GET', '/api/v1/products/-5');
   await expect('id=0', 400, 'GET', '/api/v1/products/0');
   await expect('id=1.5', 400, 'GET', '/api/v1/products/1.5');
-  await expect('id con inyección', 400, 'GET', '/api/v1/products/1%20OR%201=1');
+  await expectInjection('id con inyección', 400, 'GET', '/api/v1/products/1%20OR%201=1');
   await expect('id=99999 (no existe)', 404, 'GET', '/api/v1/products/99999');
 
   console.log('\nCrear producto (datos inválidos)');
