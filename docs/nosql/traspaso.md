@@ -4,6 +4,7 @@ Brookies Coffee · Grupo 20 · ICI-324. Se sigue la receta de 5 pasos de la clas
 inventario → consultas → decisión → colecciones → validación.
 
 **Resultado:** 9 tablas relacionales pasan a **4 colecciones**: `usuarios`, `productos`, `insumos` y `pedidos`.
+Se agrega una quinta, `reservas`, que no viene del relacional: guarda el stock apartado mientras el cliente paga.
 Los documentos de ejemplo están en `docs/nosql/json/` (un archivo por colección).
 
 ---
@@ -24,7 +25,7 @@ Los documentos de ejemplo están en `docs/nosql/json/` (un archivo por colecció
 | N° | Consulta | Frecuencia | Origen (SQL / RF) |
 |---|---|---|---|
 | Q1 | Menú con filtros: categoría, disponibilidad, apto para, tipo de preparación, orden por precio o más vendido | Muy frecuente (cada visita) | Consulta 03 · RF04 |
-| Q2 | Confirmar pedido: validar stock según receta y descontar insumos | Frecuente (cada venta) | Consulta 07 · RF07, RF10 |
+| Q2 | Reservar stock al ir a pagar y descontarlo cuando el pago se aprueba | Frecuente (cada venta) | Consulta 07 · RF07, RF10 |
 | Q3 | Historial de pedidos de un cliente | Frecuente | RF08 |
 | Q4 | Insumos en stock crítico y los productos que los usan | Diaria (administrador) | Consulta 05 · RF13 |
 | Q5 | Productos más vendidos | Ocasional (reportes) | Consulta 04 · RF16 |
@@ -67,6 +68,7 @@ lento, es la primera optimización a considerar (medir antes).
 | `usuario` + `cliente` + `administrador` | colección **`usuarios`** | Entidad principal de login y perfil; la especialización se resuelve con `rol` |
 | `producto` + `receta` | colección **`productos`** (con `receta[]` embebido) | Entidad principal de Q1; la receta se lee con el producto |
 | `insumo` | colección **`insumos`** | El stock cambia seguido; Q4 y Q2 lo consultan por separado |
+| (nueva) | colección **`reservas`** | Stock apartado durante el pago, con vencimiento (Q2) |
 | `pedido` + `detalle_pedido` + `pago` | colección **`pedidos`** (con `items[]` y `pago` embebidos) | Q3 y Q5; un pedido se lee completo de una vez |
 
 Tipos de datos usados (ver `json/`):
@@ -91,7 +93,7 @@ mongoimport --db brookies --collection pedidos   --jsonArray --file docs/nosql/j
 
 > **Pruebas:** `docs/nosql/pruebas.mongosh.js` carga los datos del seed en una base `brookies_pruebas`, corre Q1 a Q5,
 > los índices y la transacción, imprime OK/FALLA y borra la base. Uso: `mongosh "<cadena de Atlas>" --file docs/nosql/pruebas.mongosh.js`.
-> Las mismas consultas se verificaron con un emulador (mongomock) sobre los datos del seed; la transacción solo se prueba en Atlas.
+> **Resultado:** ejecutado en MongoDB Atlas (cluster M0) el 19-10-2026, 11 de 11 pruebas OK (Q1 a Q5, índice único y transacción).
 
 **Q1 · Menú con filtros** (equivale a la consulta 03, más "apto para")
 
@@ -121,28 +123,63 @@ db.productos.aggregate([
 Alternativa descartada: `$allElementsTrue` sobre un `$map` de la receta. Es más corta, pero con una receta vacía
 devuelve `true` y el producto saldría disponible.
 
-**Q2 · Confirmar pedido: validar y descontar** (equivale a la consulta 07). En SQL era un solo `UPDATE ... JOIN` atómico.
-En MongoDB toca varios documentos de `insumos`, así que se usa una **transacción multi-documento**
-(requiere replica set; Atlas lo es):
+**Q2 · Reservar, pagar y descontar** (reemplaza la consulta 07). Funciona como la compra de asientos en un cine:
+al pasar a Webpay el stock queda apartado por 10 minutos; si el pago se aprueba se descuenta, y si se rechaza o
+vence, se libera. Así el stock no puede acabarse entre que el cliente confirma el carrito y que Webpay aprueba.
+
+Cada insumo lleva `stock_reservado`, y lo que se puede vender es `stock_actual - stock_reservado`. Cada paso es una
+**transacción multi-documento** (requiere replica set; Atlas lo es), porque toca varios insumos y debe ser todo o nada.
 
 ```js
-const session = db.getMongo().startSession();
+// 1) Reservar al pasar a Webpay
 session.withTransaction(() => {
-  const dbs = session.getDatabase("brookies");
-  const receta = dbs.productos.findOne({ _id: 3 }).receta;   // Latte
-  const cantidad = 2;
-  for (const r of receta) {
-    const res = dbs.insumos.updateOne(
-      { _id: r.insumo_id, stock_actual: { $gte: r.cantidad_requerida * cantidad } },
-      { $inc: { stock_actual: -r.cantidad_requerida * cantidad } }
-    );
-    if (res.modifiedCount === 0) throw new Error("Stock insuficiente: " + r.nombre);
+  const s = session.getDatabase("brookies");
+  liberarVencidas(s);                                   // paso 3, antes de reservar
+  const necesita = [];                                  // [{insumo_id, cantidad}] = receta x cantidad de cada ítem
+  for (const it of carrito) for (const r of s.productos.findOne({ _id: it.producto_id }).receta)
+    necesita.push({ insumo_id: r.insumo_id, cantidad: r.cantidad_requerida * it.cantidad });
+  for (const n of necesita) {
+    const res = s.insumos.updateOne(
+      { _id: n.insumo_id, $expr: { $gte: [{ $subtract: ["$stock_actual", "$stock_reservado"] }, n.cantidad] } },
+      { $inc: { stock_reservado: n.cantidad } });
+    if (res.modifiedCount === 0) throw new Error("Stock insuficiente");   // pantalla 08
   }
-  // luego: insertar el pedido en dbs.pedidos con sus items y el pago aprobado
+  s.reservas.insertOne({ _id: idReserva, cliente: { _id: 2, nombre: "Camila Rojas" }, items: carrito,
+                         insumos: necesita, estado: "activa", expira_en: new Date(Date.now() + 10 * 60 * 1000) });
 });
+
+// 2) Webpay aprueba: se descuenta lo reservado y se crea el pedido
+session.withTransaction(() => {
+  const s = session.getDatabase("brookies");
+  const r = s.reservas.findOneAndUpdate({ _id: idReserva, estado: "activa", expira_en: { $gt: new Date() } },
+                                        { $set: { estado: "pagada" } });
+  if (!r) throw new Error("Reserva vencida: anular el cobro en Webpay");
+  for (const n of r.insumos)
+    s.insumos.updateOne({ _id: n.insumo_id }, { $inc: { stock_actual: -n.cantidad, stock_reservado: -n.cantidad } });
+  s.pedidos.insertOne({ /* items, total, cliente y pago aprobado */ });
+});
+
+// 3) Pago rechazado o reserva vencida: se devuelve lo apartado
+function liberarVencidas(s) {
+  for (const r of s.reservas.find({ estado: "activa", expira_en: { $lte: new Date() } }).toArray()) {
+    for (const n of r.insumos) s.insumos.updateOne({ _id: n.insumo_id }, { $inc: { stock_reservado: -n.cantidad } });
+    s.reservas.updateOne({ _id: r._id }, { $set: { estado: "liberada" } });
+  }
+}
 ```
 
-Si algún insumo no alcanza, la transacción se revierte completa (equivale al `CHECK` que rechazaba el `UPDATE` completo).
+Decisiones de este flujo:
+
+- **Contador `stock_reservado` en el insumo**, no calcularlo sumando las reservas activas. Con el contador, la
+  verificación y el apartado son un solo `updateOne` condicional, así dos clientes no pueden reservar el último stock a la vez.
+  Alternativa descartada: índice TTL que borra las reservas vencidas solo. Es más simple, pero entonces el stock
+  disponible se calcula con un `$lookup` en cada consulta y la verificación deja de ser atómica.
+- **Las reservas vencidas se liberan al hacer una reserva nueva** (y se puede agregar una tarea periódica). No se
+  depende de un proceso siempre encendido, porque Render gratis duerme el servidor.
+- **10 minutos de reserva:** debe ser mayor que lo que tarda un pago en Webpay. Si aun así un pago llega con la
+  reserva vencida, el paso 2 falla y se anula el cobro. Es el único caso raro y queda cubierto.
+- **Alternativa descartada: descontar recién al aprobar el pago**, sin reservar. Es más simple, pero el stock puede
+  acabarse mientras el cliente paga, y entonces hay que devolverle el dinero.
 
 **Q3 · Historial de pedidos de un cliente**
 
@@ -181,6 +218,7 @@ db.productos.createIndex({ categoria: 1, disponible: 1, precio: 1 })  // Q1
 db.productos.createIndex({ apto_para: 1 })                            // Q1 (filtro apto para)
 db.productos.createIndex({ "receta.insumo_id": 1 })                   // Q4
 db.pedidos.createIndex({ "cliente._id": 1, fecha: -1 })               // Q3
+db.reservas.createIndex({ estado: 1, expira_en: 1 })                  // Q2: buscar reservas vencidas
 ```
 
 `insumos` es una colección pequeña: Q4 compara dos campos entre sí (`$expr`) y ningún índice ayudaría. `pedidos` no necesita
@@ -192,6 +230,8 @@ db.pedidos.createIndex({ "cliente._id": 1, fecha: -1 })               // Q3
 
 | Si pasa esto… | Qué ocurre con este diseño |
 |---|---|
+| El cliente abandona el pago en Webpay | Su reserva vence a los 10 minutos y el stock apartado vuelve a estar disponible en la siguiente reserva |
+| Dos clientes quieren el último stock a la vez | El `updateOne` condicional sobre `stock_actual - stock_reservado` deja pasar solo a uno; el otro ve la pantalla de stock insuficiente |
 | Sube el precio de un producto | Se actualiza `productos.precio`. Los pedidos antiguos no cambian: `items.precio_unitario` es una foto histórica a propósito |
 | Se renombra un insumo | `updateOne` en `insumos` y `updateMany` sobre `productos` (`receta.insumo_id` = ese id) para actualizar la copia del nombre |
 | Cambia una marca de un insumo (por ejemplo, ahora contiene lactosa) | Hay que recalcular `apto_para` de los productos que lo usan. Es el costo de duplicar ese dato |
@@ -213,7 +253,7 @@ db.pedidos.createIndex({ "cliente._id": 1, fecha: -1 })               // Q3
 
 - **Tercera duplicación:** `pedidos.cliente.nombre` también es una copia (referencia extendida). Si el cliente cambia su nombre, los pedidos antiguos conservan el anterior (aceptable en un historial); para actualizarlos, `updateMany` sobre `pedidos` filtrando por `cliente._id`.
 - **Producto con receta vacía:** `apto_para` debe ser `[]`, no "apto para todo". Se exige al menos un insumo en la receta antes de publicar el producto. Q1 ya excluye un producto sin receta (el `$unwind` lo descarta). Es un tema de alérgenos.
-- **Stock entre validar y pagar:** el carrito valida el stock antes de Webpay, pero el pedido se crea al aprobarse el pago. Propuesta: descontar al aprobar dentro de la transacción de Q2; si ya no alcanza, anular el cobro en Webpay y avisar al cliente. Descartado: reservar stock antes de pagar (exige expirar reservas abandonadas; no vale la complejidad con un solo local). **Pendiente de confirmar por el equipo.**
+- **Stock entre validar y pagar:** resuelto con reservas que vencen (ver Q2). Decidido por el equipo el 19-10-2026.
 - **Unicidad de nombres:** en el relacional `productos.nombre` e `insumos.nombre` no tienen `UNIQUE` (solo lo valida la app). En MongoDB: `db.insumos.createIndex({ nombre: 1 }, { unique: true })`, además del de `productos`.
 - **Fechas de calendario:** `fecha_registro` como texto `"2026-08-10"` (en agosto Chile está en UTC-4; con `$date` un front en hora local mostraría el día 9). Las fechas con hora siguen en `$date` UTC.
 - **Datos opcionales:** si el cliente no tiene teléfono o dirección, el campo se omite del subdocumento `cliente` (no se guarda `null`).

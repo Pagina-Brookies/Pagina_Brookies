@@ -12,6 +12,7 @@ function check(nombre, cond, info) {
 }
 
 dbp.insumos.insertMany([{"_id": 1, "nombre": "Café molido", "unidad_medida": "g", "stock_actual": 4500, "stock_minimo": 1000, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 2, "nombre": "Leche entera", "unidad_medida": "ml", "stock_actual": 9000, "stock_minimo": 3000, "contiene_gluten": false, "contiene_lactosa": true, "es_origen_animal": true}, {"_id": 3, "nombre": "Leche de avena", "unidad_medida": "ml", "stock_actual": 5000, "stock_minimo": 1500, "contiene_gluten": true, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "stock_actual": 7000, "stock_minimo": 1500, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 5, "nombre": "Harina de trigo", "unidad_medida": "g", "stock_actual": 9000, "stock_minimo": 2000, "contiene_gluten": true, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 6, "nombre": "Mantequilla", "unidad_medida": "g", "stock_actual": 2400, "stock_minimo": 800, "contiene_gluten": false, "contiene_lactosa": true, "es_origen_animal": true}, {"_id": 7, "nombre": "Huevos", "unidad_medida": "unidad", "stock_actual": 20, "stock_minimo": 24, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": true}, {"_id": 8, "nombre": "Chips de chocolate", "unidad_medida": "g", "stock_actual": 2200, "stock_minimo": 500, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 9, "nombre": "Matcha en polvo", "unidad_medida": "g", "stock_actual": 90, "stock_minimo": 100, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 10, "nombre": "Harina de almendras", "unidad_medida": "g", "stock_actual": 1500, "stock_minimo": 400, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 11, "nombre": "Aceite vegetal", "unidad_medida": "ml", "stock_actual": 1800, "stock_minimo": 500, "contiene_gluten": false, "contiene_lactosa": false, "es_origen_animal": false}, {"_id": 12, "nombre": "Avena en hojuelas", "unidad_medida": "g", "stock_actual": 2500, "stock_minimo": 500, "contiene_gluten": true, "contiene_lactosa": false, "es_origen_animal": false}]);
+dbp.insumos.updateMany({}, { $set: { stock_reservado: 0 } });
 dbp.productos.insertMany([{"_id": 1, "nombre": "Espresso", "descripcion": "Shot de espresso", "precio": 1800, "categoria": "Café", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_gluten", "sin_lactosa", "vegano"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16}]}, {"_id": 2, "nombre": "Americano", "descripcion": "Espresso alargado con agua caliente", "precio": 2200, "categoria": "Café", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_gluten", "sin_lactosa", "vegano"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16}]}, {"_id": 3, "nombre": "Latte", "descripcion": "Espresso con leche entera texturizada", "precio": 2900, "categoria": "Café", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_gluten"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16}, {"insumo_id": 2, "nombre": "Leche entera", "unidad_medida": "ml", "cantidad_requerida": 200}]}, {"_id": 4, "nombre": "Cappuccino", "descripcion": "Espresso con leche y espuma", "precio": 2900, "categoria": "Café", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_gluten"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16}, {"insumo_id": 2, "nombre": "Leche entera", "unidad_medida": "ml", "cantidad_requerida": 120}]}, {"_id": 5, "nombre": "Latte de avena", "descripcion": "Espresso con leche de avena", "precio": 3200, "categoria": "Café", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_lactosa", "vegano"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16}, {"insumo_id": 3, "nombre": "Leche de avena", "unidad_medida": "ml", "cantidad_requerida": 200}]}, {"_id": 6, "nombre": "Cold brew", "descripcion": "Café de extracción en frío con hielo", "precio": 3300, "categoria": "Café", "tipo_preparacion": "frio", "disponible": true, "apto_para": ["sin_gluten", "sin_lactosa", "vegano"], "receta": [{"insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 25}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 5}]}, {"_id": 7, "nombre": "Matcha", "descripcion": "Matcha ceremonial batido con agua caliente", "precio": 2200, "categoria": "Té", "tipo_preparacion": "caliente", "disponible": true, "apto_para": ["sin_gluten", "sin_lactosa", "vegano"], "receta": [{"insumo_id": 9, "nombre": "Matcha en polvo", "unidad_medida": "g", "cantidad_requerida": 3}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 5}]}, {"_id": 8, "nombre": "Galleta de chocolate", "descripcion": "Galleta con chips de chocolate", "precio": 1900, "categoria": "Galleta", "tipo_preparacion": "no_aplica", "disponible": true, "apto_para": [], "receta": [{"insumo_id": 5, "nombre": "Harina de trigo", "unidad_medida": "g", "cantidad_requerida": 60}, {"insumo_id": 6, "nombre": "Mantequilla", "unidad_medida": "g", "cantidad_requerida": 40}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 35}, {"insumo_id": 7, "nombre": "Huevos", "unidad_medida": "unidad", "cantidad_requerida": 0.5}, {"insumo_id": 8, "nombre": "Chips de chocolate", "unidad_medida": "g", "cantidad_requerida": 30}]}, {"_id": 9, "nombre": "Galleta vegana de avena", "descripcion": "Galleta de avena sin huevo ni lácteos", "precio": 2100, "categoria": "Galleta", "tipo_preparacion": "no_aplica", "disponible": true, "apto_para": ["sin_lactosa", "vegano"], "receta": [{"insumo_id": 5, "nombre": "Harina de trigo", "unidad_medida": "g", "cantidad_requerida": 50}, {"insumo_id": 11, "nombre": "Aceite vegetal", "unidad_medida": "ml", "cantidad_requerida": 30}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 35}, {"insumo_id": 12, "nombre": "Avena en hojuelas", "unidad_medida": "g", "cantidad_requerida": 40}, {"insumo_id": 8, "nombre": "Chips de chocolate", "unidad_medida": "g", "cantidad_requerida": 20}]}, {"_id": 10, "nombre": "Galleta sin gluten de almendras", "descripcion": "Galleta de harina de almendras", "precio": 2300, "categoria": "Galleta", "tipo_preparacion": "no_aplica", "disponible": true, "apto_para": ["sin_gluten", "sin_lactosa"], "receta": [{"insumo_id": 10, "nombre": "Harina de almendras", "unidad_medida": "g", "cantidad_requerida": 60}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 30}, {"insumo_id": 7, "nombre": "Huevos", "unidad_medida": "unidad", "cantidad_requerida": 0.5}]}, {"_id": 11, "nombre": "Brookie clásico", "descripcion": "Mezcla de brownie y galleta", "precio": 2600, "categoria": "Galleta", "tipo_preparacion": "no_aplica", "disponible": true, "apto_para": [], "receta": [{"insumo_id": 5, "nombre": "Harina de trigo", "unidad_medida": "g", "cantidad_requerida": 70}, {"insumo_id": 6, "nombre": "Mantequilla", "unidad_medida": "g", "cantidad_requerida": 60}, {"insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 50}, {"insumo_id": 7, "nombre": "Huevos", "unidad_medida": "unidad", "cantidad_requerida": 1}, {"insumo_id": 8, "nombre": "Chips de chocolate", "unidad_medida": "g", "cantidad_requerida": 50}]}, {"_id": 12, "nombre": "Brookie de temporada", "descripcion": "Retirado del menú por ahora", "precio": 2800, "categoria": "Galleta", "tipo_preparacion": "no_aplica", "disponible": false, "apto_para": [], "receta": []}]);
 dbp.pedidos.insertMany(EJSON.deserialize([{"_id": 1, "cliente": {"_id": 2, "nombre": "Camila Rojas"}, "items": [{"producto_id": 3, "nombre": "Latte", "cantidad": 2, "precio_unitario": 2900}, {"producto_id": 8, "nombre": "Galleta de chocolate", "cantidad": 1, "precio_unitario": 1900}], "total": 7700, "fecha": {"$date": "2026-09-11T15:00:00Z"}}, {"_id": 2, "cliente": {"_id": 2, "nombre": "Camila Rojas"}, "items": [{"producto_id": 6, "nombre": "Cold brew", "cantidad": 1, "precio_unitario": 3300}, {"producto_id": 11, "nombre": "Brookie clásico", "cantidad": 2, "precio_unitario": 2600}], "total": 8500, "fecha": {"$date": "2026-09-12T15:00:00Z"}}, {"_id": 3, "cliente": {"_id": 2, "nombre": "Camila Rojas"}, "items": [{"producto_id": 4, "nombre": "Cappuccino", "cantidad": 2, "precio_unitario": 2900}, {"producto_id": 9, "nombre": "Galleta vegana de avena", "cantidad": 1, "precio_unitario": 2100}], "total": 7900, "fecha": {"$date": "2026-09-13T15:00:00Z"}}, {"_id": 4, "cliente": {"_id": 2, "nombre": "Camila Rojas"}, "items": [{"producto_id": 1, "nombre": "Espresso", "cantidad": 1, "precio_unitario": 1800}, {"producto_id": 7, "nombre": "Matcha", "cantidad": 1, "precio_unitario": 2200}, {"producto_id": 3, "nombre": "Latte", "cantidad": 1, "precio_unitario": 2900}], "total": 6900, "fecha": {"$date": "2026-09-14T15:00:00Z"}}]));
 
@@ -70,6 +71,56 @@ function vender(productoId, cantidad) {
 }
 check("Q2 vende 2 Latte", vender(3, 2) && dbp.insumos.findOne({ _id: 1 }).stock_actual === 4468 && dbp.insumos.findOne({ _id: 2 }).stock_actual === 8600);
 check("Q2 rechaza 50 galletas de chocolate y revierte la harina", !vender(8, 50) && dbp.insumos.findOne({ _id: 5 }).stock_actual === 9000);
+
+// ---- Q2 con reserva (como los asientos de un cine): reservar -> pagar -> descontar
+function liberarVencidas(s, ahora) {
+  for (const r of s.reservas.find({ estado: "activa", expira_en: { $lte: ahora } }).toArray()) {
+    for (const n of r.insumos) s.insumos.updateOne({ _id: n.insumo_id }, { $inc: { stock_reservado: -n.cantidad } });
+    s.reservas.updateOne({ _id: r._id }, { $set: { estado: "liberada" } });
+  }
+}
+function reservar(idReserva, productoId, cantidad, ahora) {
+  const session = db.getMongo().startSession();
+  try {
+    session.withTransaction(() => {
+      const s = session.getDatabase("brookies_pruebas");
+      liberarVencidas(s, ahora);
+      const necesita = s.productos.findOne({ _id: productoId }).receta
+        .map(r => ({ insumo_id: r.insumo_id, cantidad: r.cantidad_requerida * cantidad }));
+      for (const n of necesita) {
+        const res = s.insumos.updateOne(
+          { _id: n.insumo_id, $expr: { $gte: [{ $subtract: ["$stock_actual", "$stock_reservado"] }, n.cantidad] } },
+          { $inc: { stock_reservado: n.cantidad } });
+        if (res.modifiedCount === 0) throw new Error("Stock insuficiente");
+      }
+      s.reservas.insertOne({ _id: idReserva, insumos: necesita, estado: "activa", expira_en: new Date(ahora.getTime() + 10 * 60 * 1000) });
+    });
+    return true;
+  } catch (e) { return false; } finally { session.endSession(); }
+}
+function pagar(idReserva, ahora) {
+  const session = db.getMongo().startSession();
+  try {
+    session.withTransaction(() => {
+      const s = session.getDatabase("brookies_pruebas");
+      const r = s.reservas.findOneAndUpdate({ _id: idReserva, estado: "activa", expira_en: { $gt: ahora } }, { $set: { estado: "pagada" } });
+      if (!r) throw new Error("Reserva vencida");
+      for (const n of r.insumos)
+        s.insumos.updateOne({ _id: n.insumo_id }, { $inc: { stock_actual: -n.cantidad, stock_reservado: -n.cantidad } });
+    });
+    return true;
+  } catch (e) { return false; } finally { session.endSession(); }
+}
+const huevos = () => dbp.insumos.findOne({ _id: 7 });
+const t0 = new Date("2026-10-20T12:00:00Z"), min = (m) => new Date(t0.getTime() + m * 60000);
+// Brookie clásico (11) usa 1 huevo; hay 20
+check("Reserva 15 brookies: aparta 15 huevos sin descontarlos", reservar(1, 11, 15, t0) && huevos().stock_actual === 20 && huevos().stock_reservado === 15);
+check("Otra reserva de 10 se rechaza (solo quedan 5 libres)", !reservar(2, 11, 10, t0) && huevos().stock_reservado === 15);
+check("Pago aprobado: descuenta lo reservado", pagar(1, min(5)) && huevos().stock_actual === 5 && huevos().stock_reservado === 0);
+check("Reserva de 5 y el cliente abandona", reservar(3, 11, 5, min(6)) && huevos().stock_reservado === 5);
+check("Al vencer, la siguiente reserva la libera", reservar(4, 11, 5, min(20)) && huevos().stock_reservado === 5);
+check("Pago que llega con la reserva vencida se rechaza", !pagar(3, min(21)) && huevos().stock_actual === 5);
+dbp.insumos.updateOne({ _id: 7 }, { $set: { stock_actual: 20, stock_reservado: 0 } });
 
 // ---- Q3 historial
 r = dbp.pedidos.find({ "cliente._id": 2 }).sort({ fecha: -1 }).toArray();
