@@ -1,0 +1,22 @@
+[
+  {
+    "_id": 7,
+    "nombre": "Huevos",
+    "unidad_medida": "unidad",
+    "stock_actual": 20,
+    "stock_minimo": 24,
+    "contiene_gluten": false,
+    "contiene_lactosa": false,
+    "es_origen_animal": true
+  },
+  {
+    "_id": 2,
+    "nombre": "Leche entera",
+    "unidad_medida": "ml",
+    "stock_actual": 9000,
+    "stock_minimo": 3000,
+    "contiene_gluten": false,
+    "contiene_lactosa": true,
+    "es_origen_animal": true
+  }
+]

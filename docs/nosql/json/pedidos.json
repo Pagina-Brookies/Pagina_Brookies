@@ -1,0 +1,39 @@
+[
+  {
+    "_id": 1,
+    "cliente": { "_id": 2, "nombre": "Camila Rojas" },
+    "fecha": { "$date": "2026-09-14T13:05:00Z" },
+    "estado": "listo",
+    "total": 7700,
+    "items": [
+      { "producto_id": 3, "nombre": "Latte", "cantidad": 2, "precio_unitario": 2900 },
+      { "producto_id": 8, "nombre": "Galleta de chocolate", "cantidad": 1, "precio_unitario": 1900 }
+    ],
+    "pago": {
+      "monto": 7700,
+      "metodo_pago": "tarjeta",
+      "token_transaccion": "tok_demo_0001",
+      "estado_pago": "aprobado",
+      "fecha_pago": { "$date": "2026-09-14T13:05:40Z" }
+    }
+  },
+  {
+    "_id": 4,
+    "cliente": { "_id": 2, "nombre": "Camila Rojas" },
+    "fecha": { "$date": "2026-09-18T15:10:00Z" },
+    "estado": "recibido",
+    "total": 6900,
+    "items": [
+      { "producto_id": 1, "nombre": "Espresso", "cantidad": 1, "precio_unitario": 1800 },
+      { "producto_id": 7, "nombre": "Matcha", "cantidad": 1, "precio_unitario": 2200 },
+      { "producto_id": 3, "nombre": "Latte", "cantidad": 1, "precio_unitario": 2900 }
+    ],
+    "pago": {
+      "monto": 6900,
+      "metodo_pago": "tarjeta",
+      "token_transaccion": "tok_demo_0004",
+      "estado_pago": "aprobado",
+      "fecha_pago": { "$date": "2026-09-18T15:10:42Z" }
+    }
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "_id": 2,
+    "rol": "cliente",
+    "nombre": "Camila Rojas",
+    "correo": "camila.rojas@example.com",
+    "contrasena_hash": "$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C",
+    "fecha_registro": { "$date": "2026-08-10T00:00:00Z" },
+    "ultimo_acceso": { "$date": "2026-09-18T15:05:00Z" },
+    "activo": true,
+    "cliente": {
+      "telefono": "+56 9 1111 1111",
+      "direccion": "Calle Ejemplo 123, Valparaíso"
+    }
+  },
+  {
+    "_id": 1,
+    "rol": "administrador",
+    "nombre": "Administrador Brookies",
+    "correo": "admin@brookies.example",
+    "contrasena_hash": "$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C",
+    "fecha_registro": { "$date": "2026-08-01T00:00:00Z" },
+    "ultimo_acceso": { "$date": "2026-09-19T12:00:00Z" },
+    "activo": true,
+    "administrador": {
+      "cargo": "Dueño",
+      "fecha_asignacion": { "$date": "2026-08-01T00:00:00Z" }
+    }
+  }
+]

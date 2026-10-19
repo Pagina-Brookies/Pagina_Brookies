@@ -1,0 +1,33 @@
+[
+  {
+    "_id": 3,
+    "nombre": "Latte",
+    "descripcion": "Espresso con leche entera texturizada",
+    "precio": 2900,
+    "categoria": "Café",
+    "tipo_preparacion": "caliente",
+    "disponible": true,
+    "apto_para": ["sin_gluten"],
+    "receta": [
+      { "insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16 },
+      { "insumo_id": 2, "nombre": "Leche entera", "unidad_medida": "ml", "cantidad_requerida": 200 }
+    ]
+  },
+  {
+    "_id": 9,
+    "nombre": "Galleta vegana de avena",
+    "descripcion": "Galleta de avena sin huevo ni lácteos",
+    "precio": 2100,
+    "categoria": "Galleta",
+    "tipo_preparacion": "no_aplica",
+    "disponible": true,
+    "apto_para": ["sin_lactosa", "vegano"],
+    "receta": [
+      { "insumo_id": 5, "nombre": "Harina de trigo", "unidad_medida": "g", "cantidad_requerida": 50 },
+      { "insumo_id": 11, "nombre": "Aceite vegetal", "unidad_medida": "ml", "cantidad_requerida": 30 },
+      { "insumo_id": 4, "nombre": "Azúcar", "unidad_medida": "g", "cantidad_requerida": 35 },
+      { "insumo_id": 12, "nombre": "Avena en hojuelas", "unidad_medida": "g", "cantidad_requerida": 40 },
+      { "insumo_id": 8, "nombre": "Chips de chocolate", "unidad_medida": "g", "cantidad_requerida": 20 }
+    ]
+  }
+]
