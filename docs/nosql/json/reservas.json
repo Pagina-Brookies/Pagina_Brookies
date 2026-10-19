@@ -1,0 +1,34 @@
+[
+  {
+    "_id": 7,
+    "cliente": {
+      "_id": 2,
+      "nombre": "Camila Rojas"
+    },
+    "items": [
+      {
+        "producto_id": 3,
+        "nombre": "Latte",
+        "cantidad": 2,
+        "precio_unitario": 2900
+      }
+    ],
+    "insumos": [
+      {
+        "insumo_id": 1,
+        "cantidad": 32
+      },
+      {
+        "insumo_id": 2,
+        "cantidad": 400
+      }
+    ],
+    "estado": "activa",
+    "creada_en": {
+      "$date": "2026-09-19T15:40:00Z"
+    },
+    "expira_en": {
+      "$date": "2026-09-19T15:50:00Z"
+    }
+  }
+]

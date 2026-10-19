@@ -4,7 +4,6 @@ node_modules/
 # Secretos y configuración local
 .env
 .env.*
-!.env.example
 *.pem
 
 # Sistema y editores

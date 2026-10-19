@@ -80,6 +80,11 @@ function parseBoolean(value, { required = false } = {}) {
   return undefined; // valor presente pero de tipo incorrecto
 }
 
+/** Precio en pesos chilenos: entero mayor a 0 (el CLP no tiene decimales). */
+function parsePrice(value) {
+  return parsePositiveInt(value, { max: 99999999 });
+}
+
 /** Valor dentro de una lista fija (categoría, tipo_preparacion, etc.). */
 function parseEnum(value, allowed) {
   return typeof value === 'string' && allowed.includes(value) ? value : null;
@@ -178,8 +183,12 @@ function escapeLike(text) {
 // de cortar en el primer campo malo.
 // ------------------------------------------------------------------------
 
-/** POST /api/v1/supplies */
-function validateInsumoCreate(body = {}) {
+/**
+ * POST /api/v1/supplies (y PUT con strict = true).
+ * En PUT las marcas de alérgenos son obligatorias: si faltaran se guardarían como false
+ * y un insumo con lactosa quedaría como libre de lactosa.
+ */
+function validateInsumoCreate(body = {}, { strict = false } = {}) {
   const errors = [];
   const out = {};
 
@@ -196,8 +205,8 @@ function validateInsumoCreate(body = {}) {
   if (out.stock_minimo === null) errors.push({ field: 'stock_minimo', message: 'debe ser un número mayor o igual a 0, con máximo 2 decimales' });
 
   for (const flag of ['contiene_gluten', 'contiene_lactosa', 'es_origen_animal']) {
-    const v = parseBoolean(body[flag]);
-    if (v === undefined) errors.push({ field: flag, message: 'debe ser true o false' });
+    const v = parseBoolean(body[flag], { required: strict });
+    if (v === undefined) errors.push({ field: flag, message: strict ? 'requerido en PUT: true o false' : 'debe ser true o false' });
     else out[flag] = v;
   }
 
@@ -212,32 +221,42 @@ function validateRestock(body = {}) {
   return { errors, data: { cantidad } };
 }
 
-/** POST /api/v1/products */
-function validateProductoCreate(body = {}) {
+/**
+ * POST /api/v1/products (y PUT con strict = true).
+ * En PUT, descripcion, tipo_preparacion y disponible son obligatorios: si faltaran se
+ * guardarían null / 'no_aplica' / false y un PUT que solo cambia el nombre escondería el producto.
+ */
+function validateProductoCreate(body = {}, { strict = false } = {}) {
   const errors = [];
   const out = {};
 
   out.nombre = parseText(body.nombre, { maxLen: 100 });
   if (out.nombre === null) errors.push({ field: 'nombre', message: 'texto requerido, de 1 a 100 caracteres' });
 
-  if (body.descripcion !== undefined && body.descripcion !== null) {
+  if (strict && body.descripcion === undefined) {
+    errors.push({ field: 'descripcion', message: 'requerido en PUT (use null para dejarla vacía)' });
+  } else if (body.descripcion !== undefined && body.descripcion !== null) {
     out.descripcion = parseText(body.descripcion, { maxLen: 300, minLen: 0 });
     if (out.descripcion === null) errors.push({ field: 'descripcion', message: 'no puede superar los 300 caracteres' });
   } else {
     out.descripcion = null;
   }
 
-  out.precio = parseDecimal(body.precio);
-  if (out.precio === null) errors.push({ field: 'precio', message: 'debe ser un número mayor a 0, con máximo 2 decimales' });
+  out.precio = parsePrice(body.precio);
+  if (out.precio === null) errors.push({ field: 'precio', message: 'debe ser un entero mayor a 0 (pesos chilenos, sin decimales)' });
 
   out.categoria = parseLooseEnum(body.categoria, CATEGORIES);
   if (out.categoria === null) errors.push({ field: 'categoria', message: `debe ser una de: ${CATEGORIES.join(', ')}` });
 
-  out.tipo_preparacion = body.tipo_preparacion === undefined ? 'no_aplica' : parseLooseEnum(body.tipo_preparacion, PREPARATION);
-  if (out.tipo_preparacion === null) errors.push({ field: 'tipo_preparacion', message: `debe ser uno de: ${PREPARATION.join(', ')}` });
+  if (body.tipo_preparacion === undefined && !strict) {
+    out.tipo_preparacion = 'no_aplica';
+  } else {
+    out.tipo_preparacion = parseLooseEnum(body.tipo_preparacion, PREPARATION);
+    if (out.tipo_preparacion === null) errors.push({ field: 'tipo_preparacion', message: `debe ser uno de: ${PREPARATION.join(', ')}` });
+  }
 
-  out.disponible = parseBoolean(body.disponible);
-  if (out.disponible === undefined) errors.push({ field: 'disponible', message: 'debe ser true o false' });
+  out.disponible = parseBoolean(body.disponible, { required: strict });
+  if (out.disponible === undefined) errors.push({ field: 'disponible', message: strict ? 'requerido en PUT: true o false' : 'debe ser true o false' });
 
   return { errors, data: out };
 }
@@ -264,10 +283,10 @@ function validateSell(body = {}) {
 
 module.exports = {
   parseProductQuery, parseId, escapeLike,
-  parseInteger, parsePositiveInt, parseDecimal, parseText, parseBoolean, parseEnum,
+  parseInteger, parsePositiveInt, parseDecimal, parsePrice, parseText, parseBoolean, parseEnum,
   validateInsumoCreate, validateRestock, validateProductoCreate, validateRecetaItem, validateSell,
-  // PUT reemplaza el recurso completo, así que exige los mismos campos que crear uno nuevo.
-  validateInsumoUpdate: validateInsumoCreate,
-  validateProductoUpdate: validateProductoCreate,
+  // PUT reemplaza el recurso completo: exige TODOS los campos, sin valores por defecto.
+  validateInsumoUpdate: (body) => validateInsumoCreate(body, { strict: true }),
+  validateProductoUpdate: (body) => validateProductoCreate(body, { strict: true }),
   CATEGORIES, PREPARATION, SUITABLE_FOR, UNITS, normalize, parseLooseEnum,
 };

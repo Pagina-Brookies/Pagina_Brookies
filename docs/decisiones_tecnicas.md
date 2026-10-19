@@ -10,7 +10,7 @@ Resumen de lo que se decidió para la Etapa 1 y por qué. Sirve como apoyo para 
 | Base de datos | MySQL 8 | El diccionario de datos usa `AUTO_INCREMENT`, `DECIMAL` y restricciones `CHECK`, que MySQL 8.0.16+ aplica. |
 | Acceso a datos | Driver `mysql2` con SQL parametrizado, sin ORM | Las 13 consultas deben verse como SQL y traducirse a álgebra relacional. Los valores del usuario van siempre como parámetros (`?`). |
 | Hosting del backend | Render | Despliegue simple desde GitHub. |
-| Hosting de la BD | Aiven (MySQL) | Render no aloja MySQL. Aiven exige conexión SSL (ver `.env.example`). |
+| Hosting de la BD | Aiven (MySQL) | Render no aloja MySQL. Aiven exige conexión SSL (variables `DB_SSL` y `DB_SSL_CA` en `.env`). |
 | Documentación de la API | Swagger / OpenAPI (`/api-docs`) | Cada endpoint se puede probar desde el navegador; abre apuntando a producción por defecto. |
 | Pruebas | `node:test` + `scripts/api_check.js` | Unitarias de cada validador y ~87 casos de punta a punta contra la API. |
 

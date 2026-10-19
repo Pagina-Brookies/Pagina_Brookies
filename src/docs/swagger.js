@@ -54,7 +54,7 @@ const definition = {
           apto_para: {
             type: 'array', items: { type: 'string', enum: ['sin_gluten', 'sin_lactosa', 'vegano'] },
             example: ['sin_gluten', 'vegano'],
-            description: 'calculado desde los insumos de la receta: ninguno contiene gluten / lactosa / origen animal',
+            description: 'calculado desde los insumos de la receta: ninguno contiene gluten / lactosa / origen animal. Un producto sin receta no es apto para nada',
           },
         },
       },
@@ -64,11 +64,12 @@ const definition = {
         properties: {
           nombre: { type: 'string', maxLength: 100, example: 'Mocha' },
           descripcion: { type: 'string', maxLength: 300, nullable: true, example: 'Espresso, chocolate y leche' },
-          precio: { type: 'number', minimum: 0.01, example: 3100 },
+          precio: { type: 'integer', minimum: 1, example: 3100, description: 'pesos chilenos, sin decimales' },
           categoria: { type: 'string', enum: ['Café', 'Té', 'Galleta'], example: 'Café' },
           tipo_preparacion: { type: 'string', enum: ['caliente', 'frio', 'no_aplica'], default: 'no_aplica' },
           disponible: { type: 'boolean', example: true },
         },
+        description: 'En PUT son obligatorios todos los campos, incluidos descripcion (null para vaciarla), tipo_preparacion y disponible.',
       },
       RecetaItemInput: {
         type: 'object',

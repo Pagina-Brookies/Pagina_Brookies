@@ -3,8 +3,12 @@
 const db = require('../config/db');
 const { escapeLike } = require('../utils/validators');
 
-// Un producto está disponible si el administrador lo dejó en el menú (disponible = TRUE)
-// y además hay stock suficiente de cada insumo de su receta.
+// Un producto sin receta no se puede vender ni clasificar: sin esta condición, los NOT EXISTS
+// de abajo darían verdadero con una receta vacía (apto para todo y "disponible").
+const HAS_RECIPE = 'EXISTS (SELECT 1 FROM receta rr WHERE rr.id_producto = p.id_producto)';
+
+// Un producto está disponible si el administrador lo dejó en el menú (disponible = TRUE),
+// tiene receta y hay stock suficiente de cada insumo de ella.
 const STOCK_OK = `NOT EXISTS (
     SELECT 1
     FROM receta r
@@ -12,7 +16,7 @@ const STOCK_OK = `NOT EXISTS (
     WHERE r.id_producto = p.id_producto
       AND i.stock_actual < r.cantidad_requerida
 )`;
-const EFFECTIVE_AVAILABLE = `(p.disponible = TRUE AND ${STOCK_OK})`;
+const EFFECTIVE_AVAILABLE = `(p.disponible = TRUE AND ${HAS_RECIPE} AND ${STOCK_OK})`;
 
 // Columna de insumo que revisa cada filtro "apto para". Sale de esta lista fija,
 // nunca del texto que envía el usuario, por eso es seguro escribirla en la consulta.
@@ -22,17 +26,17 @@ const SUITABLE_FLAG = {
   vegano: 'es_origen_animal',
 };
 
-// Un producto es apto para X si ningún insumo de su receta tiene la marca correspondiente.
-const aptoPara = (flag) => `NOT EXISTS (
+// Un producto es apto para X si tiene receta y ningún insumo de ella tiene la marca correspondiente.
+const aptoPara = (flag) => `${HAS_RECIPE} AND NOT EXISTS (
     SELECT 1 FROM receta ra JOIN insumo ia ON ia.id_insumo = ra.id_insumo
     WHERE ra.id_producto = p.id_producto AND ia.${flag} = TRUE)`;
 
 const SELECT_COLUMNS = `
     p.id_producto, p.nombre, p.descripcion, p.precio, p.categoria, p.tipo_preparacion,
     p.disponible, ${EFFECTIVE_AVAILABLE} AS disponible_efectivo,
-    ${aptoPara('contiene_gluten')} AS apto_sin_gluten,
-    ${aptoPara('contiene_lactosa')} AS apto_sin_lactosa,
-    ${aptoPara('es_origen_animal')} AS apto_vegano`;
+    (${aptoPara('contiene_gluten')}) AS apto_sin_gluten,
+    (${aptoPara('contiene_lactosa')}) AS apto_sin_lactosa,
+    (${aptoPara('es_origen_animal')}) AS apto_vegano`;
 
 function toProduct(row) {
   const { apto_sin_gluten, apto_sin_lactosa, apto_vegano, ...rest } = row;
@@ -73,13 +77,7 @@ async function findAll({ category, onlyAvailable, name, suitableFor, preparation
     params.push(`%${escapeLike(name)}%`);
   }
   if (suitableFor) {
-    const flag = SUITABLE_FLAG[suitableFor];
-    where.push(`NOT EXISTS (
-        SELECT 1
-        FROM receta r2
-        JOIN insumo i2 ON i2.id_insumo = r2.id_insumo
-        WHERE r2.id_producto = p.id_producto AND i2.${flag} = TRUE
-    )`);
+    where.push(`(${aptoPara(SUITABLE_FLAG[suitableFor])})`);
   }
   if (preparation) {
     where.push('p.tipo_preparacion = ?');
