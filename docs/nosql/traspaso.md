@@ -93,7 +93,7 @@ mongoimport --db brookies --collection pedidos   --jsonArray --file docs/nosql/j
 
 > **Pruebas:** `docs/nosql/pruebas.mongosh.js` carga los datos del seed en una base `brookies_pruebas`, corre Q1 a Q5,
 > los índices y la transacción, imprime OK/FALLA y borra la base. Uso: `mongosh "<cadena de Atlas>" --file docs/nosql/pruebas.mongosh.js`.
-> **Resultado:** ejecutado en MongoDB Atlas (cluster M0) el 19-10-2026, 11 de 11 pruebas OK (Q1 a Q5, índice único y transacción).
+> **Resultado:** ejecutado en MongoDB Atlas (cluster M0) el 19-10-2026, 17 de 17 pruebas OK (Q1 a Q5, índice único, transacción y reservas).
 
 **Q1 · Menú con filtros** (equivale a la consulta 03, más "apto para")
 
