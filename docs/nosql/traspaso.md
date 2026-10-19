@@ -89,7 +89,9 @@ mongoimport --db brookies --collection pedidos   --jsonArray --file docs/nosql/j
 
 ## Paso 5 · Consultas en MQL e índices
 
-> Estas consultas no se han ejecutado todavía contra un MongoDB real. Probarlas en mongosh o Atlas antes de la Etapa 2.
+> **Pruebas:** `docs/nosql/pruebas.mongosh.js` carga los datos del seed en una base `brookies_pruebas`, corre Q1 a Q5,
+> los índices y la transacción, imprime OK/FALLA y borra la base. Uso: `mongosh "<cadena de Atlas>" --file docs/nosql/pruebas.mongosh.js`.
+> Las mismas consultas se verificaron con un emulador (mongomock) sobre los datos del seed; la transacción solo se prueba en Atlas.
 
 **Q1 · Menú con filtros** (equivale a la consulta 03, más "apto para")
 
@@ -100,24 +102,24 @@ db.productos.find(
 ).sort({ precio: 1 })
 ```
 
-Con disponibilidad efectiva (aquí sí hace falta `$lookup`, es el costo asumido):
+Con disponibilidad efectiva (aquí sí hace falta `$lookup`, es el costo asumido). Se "desarma" la receta, se cruza cada
+ítem con su insumo y se cuentan los insumos que no alcanzan:
 
 ```js
 db.productos.aggregate([
   { $match: { disponible: true, categoria: "Café" } },
-  { $lookup: { from: "insumos", localField: "receta.insumo_id", foreignField: "_id", as: "insumos" } },
-  { $addFields: { hay_stock: { $allElementsTrue: { $map: {
-      input: "$receta", as: "r",
-      in: { $gte: [
-        { $arrayElemAt: [ { $map: {
-            input: { $filter: { input: "$insumos", as: "i", cond: { $eq: ["$$i._id", "$$r.insumo_id"] } } },
-            as: "m", in: "$$m.stock_actual" } }, 0 ] },
-        "$$r.cantidad_requerida" ] } } } } } },
-  { $match: { hay_stock: true } },
-  { $sort: { precio: 1 } },
-  { $project: { insumos: 0, receta: 0 } }
+  { $unwind: "$receta" },                 // un producto sin receta desaparece aquí: nunca sale como disponible
+  { $lookup: { from: "insumos", localField: "receta.insumo_id", foreignField: "_id", as: "insumo" } },
+  { $unwind: "$insumo" },
+  { $group: { _id: "$_id", nombre: { $first: "$nombre" }, precio: { $first: "$precio" }, apto_para: { $first: "$apto_para" },
+              insumos_sin_stock: { $sum: { $cond: [{ $lt: ["$insumo.stock_actual", "$receta.cantidad_requerida"] }, 1, 0] } } } },
+  { $match: { insumos_sin_stock: 0 } },
+  { $sort: { precio: 1 } }
 ])
 ```
+
+Alternativa descartada: `$allElementsTrue` sobre un `$map` de la receta. Es más corta, pero con una receta vacía
+devuelve `true` y el producto saldría disponible.
 
 **Q2 · Confirmar pedido: validar y descontar** (equivale a la consulta 07). En SQL era un solo `UPDATE ... JOIN` atómico.
 En MongoDB toca varios documentos de `insumos`, así que se usa una **transacción multi-documento**
@@ -174,6 +176,7 @@ db.pedidos.aggregate([
 ```js
 db.usuarios.createIndex({ correo: 1 }, { unique: true })              // login
 db.productos.createIndex({ nombre: 1 }, { unique: true })             // nombres sin repetir
+db.insumos.createIndex({ nombre: 1 }, { unique: true })               // nombres sin repetir
 db.productos.createIndex({ categoria: 1, disponible: 1, precio: 1 })  // Q1
 db.productos.createIndex({ apto_para: 1 })                            // Q1 (filtro apto para)
 db.productos.createIndex({ "receta.insumo_id": 1 })                   // Q4
@@ -209,7 +212,7 @@ db.pedidos.createIndex({ "cliente._id": 1, fecha: -1 })               // Q3
 ## Casos borde y decisiones adicionales
 
 - **Tercera duplicación:** `pedidos.cliente.nombre` también es una copia (referencia extendida). Si el cliente cambia su nombre, los pedidos antiguos conservan el anterior (aceptable en un historial); para actualizarlos, `updateMany` sobre `pedidos` filtrando por `cliente._id`.
-- **Producto con receta vacía:** `apto_para` debe ser `[]`, no "apto para todo". Se exige al menos un insumo en la receta antes de publicar el producto. Con receta vacía, el `$allElementsTrue` de Q1 daría `true` (falso positivo). Es un tema de alérgenos.
+- **Producto con receta vacía:** `apto_para` debe ser `[]`, no "apto para todo". Se exige al menos un insumo en la receta antes de publicar el producto. Q1 ya excluye un producto sin receta (el `$unwind` lo descarta). Es un tema de alérgenos.
 - **Stock entre validar y pagar:** el carrito valida el stock antes de Webpay, pero el pedido se crea al aprobarse el pago. Propuesta: descontar al aprobar dentro de la transacción de Q2; si ya no alcanza, anular el cobro en Webpay y avisar al cliente. Descartado: reservar stock antes de pagar (exige expirar reservas abandonadas; no vale la complejidad con un solo local). **Pendiente de confirmar por el equipo.**
 - **Unicidad de nombres:** en el relacional `productos.nombre` e `insumos.nombre` no tienen `UNIQUE` (solo lo valida la app). En MongoDB: `db.insumos.createIndex({ nombre: 1 }, { unique: true })`, además del de `productos`.
 - **Fechas de calendario:** `fecha_registro` como texto `"2026-08-10"` (en agosto Chile está en UTC-4; con `$date` un front en hora local mostraría el día 9). Las fechas con hora siguen en `$date` UTC.
