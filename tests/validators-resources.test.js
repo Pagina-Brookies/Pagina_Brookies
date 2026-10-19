@@ -117,16 +117,32 @@ test('validateSell limita la cantidad a un entero razonable (1 a 500)', () => {
   assert.equal(validateSell({ cantidad: 500 }).errors.length, 0);
 });
 
-test('validateInsumoUpdate (PUT) exige el recurso completo, igual que al crear', () => {
-  assert.equal(validateInsumoUpdate, validateInsumoCreate);
+test('validateInsumoUpdate (PUT) exige el recurso completo', () => {
   const bad = validateInsumoUpdate({ nombre: 'X', unidad_medida: 'g', stock_actual: -1, stock_minimo: 1, contiene_gluten: false, contiene_lactosa: false, es_origen_animal: false });
   assert.equal(bad.errors.length, 1);
 });
 
-test('validateProductoUpdate (PUT) exige el recurso completo, igual que al crear', () => {
-  assert.equal(validateProductoUpdate, validateProductoCreate);
-  const bad = validateProductoUpdate({ nombre: 'X', precio: 0, categoria: 'Café', disponible: true });
+test('validateProductoUpdate (PUT) exige el recurso completo', () => {
+  const bad = validateProductoUpdate({ nombre: 'X', descripcion: null, precio: 0, categoria: 'Café', tipo_preparacion: 'caliente', disponible: true });
   assert.equal(bad.errors.length, 1); // precio debe ser > 0, no admite 0
+});
+
+test('PUT de producto no borra campos omitidos: los exige', () => {
+  const r = validateProductoUpdate({ nombre: 'Latte', precio: 2900, categoria: 'Café' });
+  assert.deepEqual(r.errors.map((e) => e.field).sort(), ['descripcion', 'disponible', 'tipo_preparacion']);
+  // al crear siguen existiendo los valores por defecto
+  assert.deepEqual(validateProductoCreate({ nombre: 'Latte', precio: 2900, categoria: 'Café' }).errors, []);
+});
+
+test('PUT de insumo exige las tres marcas de alérgenos', () => {
+  const r = validateInsumoUpdate({ nombre: 'Leche entera', unidad_medida: 'ml', stock_actual: 100, stock_minimo: 10 });
+  assert.deepEqual(r.errors.map((e) => e.field).sort(), ['contiene_gluten', 'contiene_lactosa', 'es_origen_animal']);
+  assert.deepEqual(validateInsumoCreate({ nombre: 'Leche entera', unidad_medida: 'ml', stock_actual: 100, stock_minimo: 10 }).errors, []);
+});
+
+test('el precio es un entero en pesos chilenos', () => {
+  assert.equal(validateProductoCreate({ nombre: 'Mocha', precio: 3100.5, categoria: 'Café' }).errors[0].field, 'precio');
+  assert.equal(validateProductoCreate({ nombre: 'Mocha', precio: '3100', categoria: 'Café' }).data.precio, 3100);
 });
 
 // ---- casos agregados tras las pruebas manuales en Swagger ----

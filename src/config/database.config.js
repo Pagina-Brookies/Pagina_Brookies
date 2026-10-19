@@ -23,7 +23,7 @@ function getConnectionConfig(extra = {}) {
   const missing = ['DB_HOST', 'DB_USER', 'DB_NAME'].filter((k) => !process.env[k]);
   if (missing.length > 0) {
     throw new Error(
-      `Faltan variables de entorno: ${missing.join(', ')}. Copia .env.example a .env y complétalo.`
+      `Faltan variables de entorno: ${missing.join(', ')}. Defínelas en el archivo .env.`
     );
   }
   return {

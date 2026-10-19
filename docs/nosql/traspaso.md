@@ -205,3 +205,13 @@ db.pedidos.createIndex({ "cliente._id": 1, fecha: -1 })               // Q3
    cuando el pago se aprueba, así que en la práctica el subdocumento `pago` siempre dice `aprobado`.
 3. **Etapa 3.** Se pide conectar BD relacional y no relacional a la vez, con los usuarios verificados con JWT en la
    BD relacional. Hay que decidir qué datos viven en cada una antes de migrar `usuarios`.
+
+## Casos borde y decisiones adicionales
+
+- **Tercera duplicación:** `pedidos.cliente.nombre` también es una copia (referencia extendida). Si el cliente cambia su nombre, los pedidos antiguos conservan el anterior (aceptable en un historial); para actualizarlos, `updateMany` sobre `pedidos` filtrando por `cliente._id`.
+- **Producto con receta vacía:** `apto_para` debe ser `[]`, no "apto para todo". Se exige al menos un insumo en la receta antes de publicar el producto. Con receta vacía, el `$allElementsTrue` de Q1 daría `true` (falso positivo). Es un tema de alérgenos.
+- **Stock entre validar y pagar:** el carrito valida el stock antes de Webpay, pero el pedido se crea al aprobarse el pago. Propuesta: descontar al aprobar dentro de la transacción de Q2; si ya no alcanza, anular el cobro en Webpay y avisar al cliente. Descartado: reservar stock antes de pagar (exige expirar reservas abandonadas; no vale la complejidad con un solo local). **Pendiente de confirmar por el equipo.**
+- **Unicidad de nombres:** en el relacional `productos.nombre` e `insumos.nombre` no tienen `UNIQUE` (solo lo valida la app). En MongoDB: `db.insumos.createIndex({ nombre: 1 }, { unique: true })`, además del de `productos`.
+- **Fechas de calendario:** `fecha_registro` como texto `"2026-08-10"` (en agosto Chile está en UTC-4; con `$date` un front en hora local mostraría el día 9). Las fechas con hora siguen en `$date` UTC.
+- **Datos opcionales:** si el cliente no tiene teléfono o dirección, el campo se omite del subdocumento `cliente` (no se guarda `null`).
+- **Precios:** enteros (CLP); validar entero en la API y en el esquema, aunque hoy la API acepta 2 decimales.

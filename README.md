@@ -5,7 +5,7 @@ Proyecto del ramo **ICI-324 Bases de Datos y Programación Web** (Universidad de
 
 - **Integrantes:** Felipe Hernández Olivares · Simón Reyes Morales
 - **Profesor:** Benjamín Serrano
-- **Etapa:** 1 (base de datos implementada, conexión desde la aplicación y 13 consultas SQL)
+- **Etapa:** 1 (base de datos implementada, conexión desde la aplicación y 13 consultas SQL) · Control 2: traspaso a MongoDB y mockups
 - **Backend desplegado:** https://brookies-coffee-api.onrender.com
 
 ## Dónde vive el proyecto (Etapa 1)
@@ -42,7 +42,9 @@ Node.js 18 o superior · Express · MySQL 8.0.16 o superior · `mysql2` (SQL par
    ```
 2. Crea una base de datos MySQL vacía (por ejemplo `brookies`) y un usuario con permisos sobre ella.
 3. Copia `.env.example` como `.env` y completa los valores (host, usuario, clave y nombre de la base).
-   El archivo `.env` no se sube al repositorio.
+   El `.gitignore` excluye `.env` y `*.pem`, pero `.env` y `ca.pem` se subieron en la Etapa 1, antes de crear
+   esa regla, y siguen versionados. Pendiente: sacarlos del repositorio (`git rm --cached .env ca.pem`) y
+   cambiar la contraseña de Aiven, porque sigue en el historial de git.
 4. Crea las tablas y carga los datos de prueba:
    ```bash
    npm run db:reset
@@ -195,4 +197,8 @@ Los planes gratuitos pueden dormir el servicio o apagar la base por inactividad:
 - `algebra_relacional.md` y `algebra_relacional/brookies.relax.txt` (grupo de datos para RelaX)
 - `resultados_consultas.md`: resultado de ejecutar las 13 consultas
 - `decisiones_tecnicas.md`
-- `mockups/`: pantallas del sitio
+- `mockups/`: pantallas del sitio (01 a 28 sin la 16; incluye `17_flujo_navegacion.png` y `18_guia_estilo.png`)
+- `nosql/traspaso.md`: traspaso del modelo relacional a MongoDB (Control 2)
+- `nosql/json/`: documentos JSON de ejemplo, uno por colección
+- `nosql/pruebas.mongosh.js`: prueba las consultas MQL en una base temporal
+  (`mongosh "<cadena de conexión>" --file docs/nosql/pruebas.mongosh.js`)
