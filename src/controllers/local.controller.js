@@ -10,6 +10,11 @@ function info(req, res) {
   return ok(res, {
     nombre: 'Brookies Coffee',
     direccion: process.env.LOCAL_DIRECCION || 'Calle Ejemplo 123, Valparaíso',
+    // mientras el local no abra, el mapa muestra una zona de referencia; con LOCAL_MAPA se fija el punto real
+    mapa: {
+      consulta: process.env.LOCAL_MAPA || 'Plaza Sotomayor, Valparaíso, Chile',
+      referencial: !process.env.LOCAL_MAPA,
+    },
     telefono: process.env.LOCAL_TELEFONO || '+56 9 1111 1111',
     correo_contacto: process.env.LOCAL_CORREO || 'contacto@brookies.example',
     horarios: [

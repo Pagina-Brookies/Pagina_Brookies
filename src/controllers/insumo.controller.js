@@ -38,6 +38,18 @@ async function restock(req, res) {
   return s ? ok(res, s) : fail(res, 404, 'insumo no existe');
 }
 
+/** PATCH /api/v1/supplies/:id/withdraw: resta stock para corregir un error de carga. */
+async function withdraw(req, res) {
+  const id = parseId(req.params.id);
+  if (id === null) return badId(res);
+  const { errors, data } = validateRestock(req.body);
+  if (errors.length) return fail(res, 400, errors);
+  const s = await Insumo.withdraw(id, data.cantidad);
+  if (s === null) return fail(res, 404, 'insumo no existe');
+  if (s === false) return fail(res, 409, { field: 'cantidad', message: 'no se puede restar más que el stock libre (stock actual menos lo reservado por pagos en curso)' });
+  return ok(res, s);
+}
+
 /** PUT /api/v1/supplies/:id (RF11) */
 async function update(req, res) {
   const id = parseId(req.params.id);
@@ -57,4 +69,4 @@ async function remove(req, res) {
   return (await Insumo.remove(id)) ? ok(res, { id_insumo: id, eliminado: true }) : fail(res, 404, 'insumo no existe');
 }
 
-module.exports = { list, getById, create, restock, update, remove };
+module.exports = { list, getById, create, restock, withdraw, update, remove };

@@ -17,8 +17,9 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:'],
+      imgSrc: ["'self'", 'data:', 'blob:'], // blob: para la vista previa de la imagen antes de subirla
       connectSrc: ["'self'"],
+      frameSrc: ['https://www.google.com'], // mapa embebido de Google Maps en "El local"
     },
   },
 }));

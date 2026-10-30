@@ -56,6 +56,8 @@ function toProduct(d, withRecipe = false) {
     disponible: Boolean(d.disponible),
     disponible_efectivo: Boolean(d.disponible_efectivo),
     apto_para: d.apto_para || [],
+    // la versión en la URL cambia con cada imagen nueva, así el navegador puede guardarla en caché sin quedar desactualizado
+    imagen_url: d.imagen_v ? `/media/productos/${d._id}?v=${d.imagen_v}` : null,
   };
   if (withRecipe) {
     out.receta = (d.receta || [])
@@ -172,7 +174,32 @@ async function hasSales(id) {
 
 async function remove(id) {
   const res = await col('productos').deleteOne({ _id: id });
+  await col('imagenes').deleteOne({ _id: id });
   return res.deletedCount > 0;
+}
+
+/**
+ * Imagen del producto. Se guarda aparte (colección imagenes, mismo _id que el producto) para que las
+ * consultas del menú no arrastren los bytes; el producto solo lleva imagen_v, la versión que va en la URL.
+ * Devuelve el producto actualizado o null si no existe.
+ */
+async function setImage(id, tipo, datos) {
+  const v = Date.now();
+  const res = await col('productos').updateOne({ _id: id }, { $set: { imagen_v: v } });
+  if (res.matchedCount === 0) return null;
+  await col('imagenes').replaceOne({ _id: id }, { _id: id, tipo, datos, actualizada_en: new Date(v) }, { upsert: true });
+  return findById(id);
+}
+
+async function getImage(id) {
+  return col('imagenes').findOne({ _id: id });
+}
+
+/** false si el producto no tenía imagen. */
+async function removeImage(id) {
+  const res = await col('productos').updateOne({ _id: id, imagen_v: { $exists: true } }, { $unset: { imagen_v: '' } });
+  await col('imagenes').deleteOne({ _id: id });
+  return res.modifiedCount > 0;
 }
 
 /** Consulta 10 (INSERT ... SELECT): agrega o actualiza un insumo en la receta (copia nombre y unidad del insumo). */
@@ -201,7 +228,7 @@ async function removeRecipeItem(idProducto, idInsumo) {
 }
 
 module.exports = {
-  findAll, findById, findManyWithStock, create, update, remove, hasSales, nameExists,
+  findAll, findById, findManyWithStock, create, update, remove, hasSales, nameExists, setImage, getImage, removeImage,
   addRecipeItem, removeRecipeItem, recomputeApto, recomputeAptoByInsumo, computeApto, STOCK_STAGES,
 };
 
