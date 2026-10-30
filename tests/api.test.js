@@ -164,6 +164,44 @@ test('recetas, insumos y reglas que reemplazan a las FK', { skip }, async () => 
   assert.strictEqual(top.body.data[0].nombre, 'Latte');
 });
 
+test('sustraer stock: corrige de más pero no toca lo reservado', { skip }, async () => {
+  const a = await login('admin@brookies.example');
+  const i0 = await M.col('insumos').findOne({ _id: 4 });
+  const ok = await call('PATCH', '/api/v1/supplies/4/withdraw', { token: a, body: { cantidad: 1 } });
+  assert.strictEqual(ok.status, 200);
+  assert.strictEqual(ok.body.data.stock_actual, i0.stock_actual - 1);
+  const libre = ok.body.data.stock_actual - ok.body.data.stock_reservado;
+  assert.strictEqual((await call('PATCH', '/api/v1/supplies/4/withdraw', { token: a, body: { cantidad: libre + 1 } })).status, 409);
+  assert.strictEqual((await call('PATCH', '/api/v1/supplies/4/withdraw', { token: a, body: { cantidad: -5 } })).status, 400);
+  assert.strictEqual((await call('PATCH', '/api/v1/supplies/9999/withdraw', { token: a, body: { cantidad: 1 } })).status, 404);
+});
+
+test('imagen de producto: subir, ver, reemplazar, quitar y rechazar lo que no es imagen', { skip }, async () => {
+  const a = await login('admin@brookies.example');
+  // PNG mínimo de 1x1
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const up = (bytes, tipo, token = a) => fetch(`${base}/api/v1/products/1/image`, { method: 'PUT', headers: { 'content-type': tipo, ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: bytes });
+
+  assert.strictEqual((await up(png, 'image/png', null)).status, 401);
+  const r = await up(png, 'image/png');
+  assert.strictEqual(r.status, 200);
+  const url = (await r.json()).data.imagen_url;
+  assert.match(url, /^\/media\/productos\/1\?v=\d+$/);
+  const img = await fetch(base + url);
+  assert.strictEqual(img.status, 200);
+  assert.strictEqual(img.headers.get('content-type'), 'image/png');
+  assert.ok(Buffer.from(await img.arrayBuffer()).equals(png));
+
+  // un texto disfrazado de imagen se rechaza por su contenido
+  assert.strictEqual((await up(Buffer.from('<script>alert(1)</script>'), 'image/png')).status, 415);
+  const menu = await call('GET', '/api/v1/products?available=false');
+  assert.strictEqual(menu.body.data.find((p) => p.id_producto === 1).imagen_url, url);
+
+  assert.strictEqual((await call('DELETE', '/api/v1/products/1/image', { token: a })).status, 200);
+  assert.strictEqual((await fetch(base + url)).status, 404);
+  assert.strictEqual((await call('DELETE', '/api/v1/products/1/image', { token: a })).status, 404);
+});
+
 test('errores: 404 de ruta, 400 de JSON roto y 429 al pasar el límite de login', { skip }, async () => {
   assert.strictEqual((await call('GET', '/api/v1/nada')).status, 404);
   const res = await fetch(`${base}/api/v1/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{roto' });
