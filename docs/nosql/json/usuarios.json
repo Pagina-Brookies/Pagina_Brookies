@@ -2,8 +2,8 @@
   {
     "_id": 2,
     "rol": "cliente",
-    "nombre": "Camila Rojas",
-    "correo": "camila.rojas@example.com",
+    "nombre": "Ignacia Valdebenito",
+    "correo": "ignacia.valdebenito@clientes.brookies.example",
     "contrasena_hash": "$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C",
     "fecha_registro": "2026-08-10",
     "ultimo_acceso": { "$date": "2026-09-18T15:05:00Z" },

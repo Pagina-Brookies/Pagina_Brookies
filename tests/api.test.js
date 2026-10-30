@@ -54,23 +54,23 @@ test.after(async () => {
 });
 
 test('login correcto, incorrecto y registro duplicado', { skip }, async () => {
-  const ok = await call('POST', '/api/v1/auth/login', { body: { correo: 'camila.rojas@example.com', contrasena: 'demo1234' } });
+  const ok = await call('POST', '/api/v1/auth/login', { body: { correo: 'ignacia.valdebenito@clientes.brookies.example', contrasena: 'demo1234' } });
   assert.strictEqual(ok.status, 200);
   assert.ok(ok.body.data.token);
   assert.strictEqual(ok.body.data.usuario.contrasena_hash, undefined);
-  const bad = await call('POST', '/api/v1/auth/login', { body: { correo: 'camila.rojas@example.com', contrasena: 'otra1234' } });
+  const bad = await call('POST', '/api/v1/auth/login', { body: { correo: 'ignacia.valdebenito@clientes.brookies.example', contrasena: 'otra1234' } });
   assert.strictEqual(bad.status, 401);
-  const dup = await call('POST', '/api/v1/auth/register', { body: { nombre: 'X', correo: 'CAMILA.rojas@example.com', contrasena: 'abcdefg1' } });
+  const dup = await call('POST', '/api/v1/auth/register', { body: { nombre: 'X', correo: 'IGNACIA.valdebenito@clientes.brookies.example', contrasena: 'abcdefg1' } });
   assert.strictEqual(dup.status, 409);
-  const weak = await call('POST', '/api/v1/auth/register', { body: { nombre: 'X', correo: 'x@example.com', contrasena: 'abcdefgh' } });
+  const weak = await call('POST', '/api/v1/auth/register', { body: { nombre: 'X', correo: 'x@clientes.brookies.example', contrasena: 'abcdefgh' } });
   assert.strictEqual(weak.status, 400);
-  const nuevo = await call('POST', '/api/v1/auth/register', { body: { nombre: 'Nuevo Cliente', correo: 'nuevo@example.com', contrasena: 'abcdefg1' } });
+  const nuevo = await call('POST', '/api/v1/auth/register', { body: { nombre: 'Nuevo Cliente', correo: 'nuevo@clientes.brookies.example', contrasena: 'abcdefg1' } });
   assert.strictEqual(nuevo.status, 201);
 });
 
 test('roles: sin token 401, cliente en ruta de admin 403', { skip }, async () => {
   assert.strictEqual((await call('GET', '/api/v1/supplies')).status, 401);
-  const t = await login('camila.rojas@example.com');
+  const t = await login('ignacia.valdebenito@clientes.brookies.example');
   assert.strictEqual((await call('GET', '/api/v1/supplies', { token: t })).status, 403);
   const a = await login('admin@brookies.example');
   assert.strictEqual((await call('GET', '/api/v1/supplies', { token: a })).status, 200);
@@ -87,7 +87,7 @@ test('menú público con disponibilidad efectiva y filtros', { skip }, async () 
 });
 
 test('reserva, pago rechazado, pago aprobado y descuento de stock', { skip }, async () => {
-  const t = await login('camila.rojas@example.com');
+  const t = await login('ignacia.valdebenito@clientes.brookies.example');
   const cafe0 = await M.col('insumos').findOne({ _id: 1 });
   const r = await call('POST', '/api/v1/orders/reservations', { token: t, body: { items: [{ producto_id: 3, cantidad: 2 }] } });
   assert.strictEqual(r.status, 201);
@@ -113,7 +113,7 @@ test('reserva, pago rechazado, pago aprobado y descuento de stock', { skip }, as
 });
 
 test('stock insuficiente da 409 y no deja reservas a medias', { skip }, async () => {
-  const t = await login('camila.rojas@example.com');
+  const t = await login('ignacia.valdebenito@clientes.brookies.example');
   const antes = await M.col('insumos').find().sort({ _id: 1 }).toArray();
   // Brookie clásico usa 1 huevo y quedan 20 (no hay stock para 50 unidades)
   const r = await call('POST', '/api/v1/orders/reservations', { token: t, body: { items: [{ producto_id: 11, cantidad: 50 }, { producto_id: 1, cantidad: 1 }] } });
@@ -123,7 +123,7 @@ test('stock insuficiente da 409 y no deja reservas a medias', { skip }, async ()
 });
 
 test('cancelar libera el stock; reservas vencidas se liberan', { skip }, async () => {
-  const t = await login('camila.rojas@example.com');
+  const t = await login('ignacia.valdebenito@clientes.brookies.example');
   const base0 = (await M.col('insumos').findOne({ _id: 1 })).stock_reservado;
   const r = await call('POST', '/api/v1/orders/reservations', { token: t, body: { items: [{ producto_id: 1, cantidad: 1 }] } });
   assert.strictEqual((await call('DELETE', `/api/v1/orders/reservations/${r.body.data.id_reserva}`, { token: t })).status, 200);
@@ -143,7 +143,7 @@ test('admin cambia estado solo hacia adelante; cliente no ve pedidos ajenos', { 
   const id = list.body.data[0].id_pedido;
   assert.strictEqual((await call('PATCH', `/api/v1/orders/${id}/status`, { token: a, body: { estado: 'listo' } })).status, 200);
   assert.strictEqual((await call('PATCH', `/api/v1/orders/${id}/status`, { token: a, body: { estado: 'recibido' } })).status, 409);
-  const nuevo = await call('POST', '/api/v1/auth/login', { body: { correo: 'nuevo@example.com', contrasena: 'abcdefg1' } });
+  const nuevo = await call('POST', '/api/v1/auth/login', { body: { correo: 'nuevo@clientes.brookies.example', contrasena: 'abcdefg1' } });
   assert.strictEqual((await call('GET', `/api/v1/orders/${id}`, { token: nuevo.body.data.token })).status, 403);
 });
 

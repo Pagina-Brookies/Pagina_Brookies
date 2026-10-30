@@ -42,7 +42,7 @@ npm run queries     # ejecuta las 13 consultas en orden sobre una base de prueba
 npm test            # pruebas (las de integración necesitan MONGODB_URI)
 ```
 
-Cuentas de demostración (contraseña `demo1234`): `admin@brookies.example` (administrador) y `camila.rojas@example.com` (cliente).
+Cuentas de demostración (contraseña `demo1234`): `admin@brookies.example` (administrador) y `ignacia.valdebenito@clientes.brookies.example` (cliente).
 
 ## Despliegue en Render
 

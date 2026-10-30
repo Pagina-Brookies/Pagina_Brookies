@@ -144,7 +144,7 @@ session.withTransaction(() => {
       { $inc: { stock_reservado: n.cantidad } });
     if (res.modifiedCount === 0) throw new Error("Stock insuficiente");   // pantalla 08
   }
-  s.reservas.insertOne({ _id: idReserva, cliente: { _id: 2, nombre: "Camila Rojas" }, items: carrito,
+  s.reservas.insertOne({ _id: idReserva, cliente: { _id: 2, nombre: "Ignacia Valdebenito" }, items: carrito,
                          insumos: necesita, estado: "activa", expira_en: new Date(Date.now() + 10 * 60 * 1000) });
 });
 
