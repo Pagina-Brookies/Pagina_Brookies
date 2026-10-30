@@ -281,7 +281,125 @@ function validateSell(body = {}) {
   return { errors, data: { cantidad } };
 }
 
+
+// ------------------------------------------------------------------------
+// Entrega 2: autenticación, perfil, pedidos
+// ------------------------------------------------------------------------
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const ORDER_STATES = ['recibido', 'en_preparacion', 'listo'];
+
+/** Contraseña: mínimo 8 caracteres y al menos un número (la regla se muestra antes de escribir, en el formulario). */
+function parsePassword(value) {
+  if (typeof value !== 'string') return null;
+  if (value.length < 8 || value.length > 72 || !/\d/.test(value)) return null; // 72 bytes: tope de bcrypt
+  return value;
+}
+
+function parseEmail(value) {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  return v.length <= 150 && EMAIL_RE.test(v) ? v : null;
+}
+
+/** Texto opcional: ausente, null o vacío => null; presente pero demasiado largo => undefined (error). */
+function parseOptionalText(value, maxLen) {
+  if (value === undefined || value === null || value === '') return null;
+  const t = parseText(value, { maxLen });
+  return t === null ? undefined : t;
+}
+
+/** POST /api/v1/auth/register (RF01) */
+function validateRegister(body = {}) {
+  const errors = [];
+  const nombre = parseText(body.nombre, { maxLen: 100 });
+  if (nombre === null) errors.push({ field: 'nombre', message: 'texto requerido, de 1 a 100 caracteres' });
+  const correo = parseEmail(body.correo);
+  if (correo === null) errors.push({ field: 'correo', message: 'debe ser un correo válido, por ejemplo nombre@dominio.cl' });
+  const contrasena = parsePassword(body.contrasena);
+  if (contrasena === null) errors.push({ field: 'contrasena', message: 'mínimo 8 caracteres, con al menos un número' });
+  const telefono = parseOptionalText(body.telefono, 20);
+  if (telefono === undefined) errors.push({ field: 'telefono', message: 'no puede superar los 20 caracteres' });
+  const direccion = parseOptionalText(body.direccion, 200);
+  if (direccion === undefined) errors.push({ field: 'direccion', message: 'no puede superar los 200 caracteres' });
+  return { errors, data: { nombre, correo, contrasena, telefono, direccion } };
+}
+
+/** POST /api/v1/auth/login (RF02) */
+function validateLogin(body = {}) {
+  const errors = [];
+  const correo = parseEmail(body.correo);
+  if (correo === null) errors.push({ field: 'correo', message: 'debe ser un correo válido' });
+  if (typeof body.contrasena !== 'string' || body.contrasena.length === 0 || body.contrasena.length > 72) {
+    errors.push({ field: 'contrasena', message: 'requerida' });
+  }
+  return { errors, data: { correo, contrasena: body.contrasena } };
+}
+
+/** PUT /api/v1/me (RF03): datos personales editables. */
+function validateProfile(body = {}) {
+  const errors = [];
+  const nombre = parseText(body.nombre, { maxLen: 100 });
+  if (nombre === null) errors.push({ field: 'nombre', message: 'texto requerido, de 1 a 100 caracteres' });
+  const telefono = parseOptionalText(body.telefono, 20);
+  if (telefono === undefined) errors.push({ field: 'telefono', message: 'no puede superar los 20 caracteres' });
+  const direccion = parseOptionalText(body.direccion, 200);
+  if (direccion === undefined) errors.push({ field: 'direccion', message: 'no puede superar los 200 caracteres' });
+  return { errors, data: { nombre, telefono, direccion } };
+}
+
+/** POST /api/v1/orders/reservations (RF05, RF07): el carrito que se quiere pagar. */
+function validateCart(body = {}) {
+  const errors = [];
+  const items = [];
+  if (!Array.isArray(body.items) || body.items.length === 0 || body.items.length > 50) {
+    errors.push({ field: 'items', message: 'debe ser una lista de 1 a 50 productos' });
+    return { errors, data: { items } };
+  }
+  const seen = new Set();
+  body.items.forEach((it, i) => {
+    const producto_id = parsePositiveInt(it && it.producto_id);
+    const cantidad = parsePositiveInt(it && it.cantidad, { max: 50 });
+    if (producto_id === null) errors.push({ field: `items[${i}].producto_id`, message: 'debe ser un entero positivo' });
+    if (cantidad === null) errors.push({ field: `items[${i}].cantidad`, message: 'debe ser un entero entre 1 y 50' });
+    if (producto_id !== null && seen.has(producto_id)) errors.push({ field: `items[${i}].producto_id`, message: 'producto repetido: sume las cantidades en una sola línea' });
+    if (producto_id !== null) seen.add(producto_id);
+    if (producto_id !== null && cantidad !== null) items.push({ producto_id, cantidad });
+  });
+  return { errors, data: { items } };
+}
+
+/**
+ * POST /api/v1/orders/reservations/:id/pay (RF06).
+ * El sistema usa una pasarela simulada (sandbox): recibe el número solo para decidir el resultado
+ * y NUNCA lo guarda (RNF01). Un número que termina en 0002 se rechaza; cualquier otro se aprueba.
+ */
+function validatePayment(body = {}) {
+  const errors = [];
+  const raw = typeof body.numero_tarjeta === 'string' ? body.numero_tarjeta.replace(/[\s-]/g, '') : '';
+  if (!/^\d{13,19}$/.test(raw)) errors.push({ field: 'numero_tarjeta', message: 'debe tener entre 13 y 19 dígitos' });
+  return { errors, data: { numero_tarjeta: raw } };
+}
+
+/** PATCH /api/v1/orders/:id/status (RF18) */
+function validateStatus(body = {}) {
+  const errors = [];
+  const estado = parseEnum(body.estado, ORDER_STATES);
+  if (estado === null) errors.push({ field: 'estado', message: `debe ser uno de: ${ORDER_STATES.join(', ')}` });
+  return { errors, data: { estado } };
+}
+
+/** Filtro opcional ?estado= del listado de pedidos del administrador. */
+function parseOrderFilter(query = {}) {
+  if (query.estado === undefined) return { errors: [], estado: null };
+  const estado = parseEnum(query.estado, ORDER_STATES);
+  return estado === null
+    ? { errors: [{ field: 'estado', message: `debe ser uno de: ${ORDER_STATES.join(', ')}` }], estado: null }
+    : { errors: [], estado };
+}
+
 module.exports = {
+  validateRegister, validateLogin, validateProfile, validateCart, validatePayment, validateStatus, parseOrderFilter, parsePassword, parseEmail, ORDER_STATES,
   parseProductQuery, parseId, escapeLike,
   parseInteger, parsePositiveInt, parseDecimal, parsePrice, parseText, parseBoolean, parseEnum,
   validateInsumoCreate, validateRestock, validateProductoCreate, validateRecetaItem, validateSell,
