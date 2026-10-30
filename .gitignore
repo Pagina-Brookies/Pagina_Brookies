@@ -1,14 +1,5 @@
-# Dependencias
 node_modules/
-
-# Secretos y configuración local
 .env
-.env.*
 *.pem
-
-# Sistema y editores
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-npm-debug.log*
+*.log
+Claude outputs/
