@@ -33,7 +33,7 @@ JWT_SECRET=<texto aleatorio de al menos 16 caracteres>
 
 Opcionales: `PORT` (3000), `JWT_EXPIRES_IN` (8h), `RATE_LIMIT` (300 por 15 min), `AUTH_RATE_LIMIT` (20 por 15 min), `RESERVA_MINUTOS` (10) y `MONGO_TX=off` para un MongoDB sin replica set. Para la pantalla del local: `LOCAL_DIRECCION`, `LOCAL_TELEFONO`, `LOCAL_CORREO`, `LOCAL_HORARIO_SEMANA`, `LOCAL_HORARIO_FINDE` y `LOCAL_MAPA` (lo que se busca en Google Maps; sin ella el mapa muestra una ubicación referencial).
 
-Logo: si existe `public/img/mascota.png` (la mascota de Brookies), la barra superior y el ícono de la pestaña la usan en lugar de `public/img/logo.svg`.
+Logo: `public/img/brookies-logo.png` (barra superior) y `public/img/favicon.png` (ícono de la pestaña). `public/img/logo.svg` queda como relleno de los productos sin foto.
 
 ```bash
 npm run db:seed     # borra y carga los datos de demostración

@@ -80,16 +80,6 @@ document.getElementById('nav-toggle').addEventListener('click', (e) => {
   const open = navEl.classList.toggle('open');
   e.currentTarget.setAttribute('aria-expanded', String(open));
 });
-// Logo: si existe img/mascota.png (la mascota de Brookies) se usa en vez del logo genérico.
-const mascota = new Image();
-mascota.onload = () => {
-  document.querySelector('.brand img').src = mascota.src;
-  const icono = document.querySelector('link[rel="icon"]');
-  icono.type = 'image/png';
-  icono.href = mascota.src;
-};
-mascota.src = 'img/mascota.png';
-
 window.addEventListener('hashchange', render);
 window.addEventListener('carrito', pintarNav);
 window.addEventListener('sesion-vencida', () => { sessionStorage.setItem('brookies.vuelta', location.hash); location.hash = '#/ingresar'; render(); });
