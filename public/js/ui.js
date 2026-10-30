@@ -24,6 +24,9 @@ export const num = (n) => new Intl.NumberFormat('es-CL', { maximumFractionDigits
 let toastTimer;
 export function toast(msg) {
   const t = document.getElementById('toast');
+  // un dialog abierto queda por encima de todo: el aviso se mueve adentro para que no quede tapado
+  const abierto = document.querySelector('dialog[open]');
+  if (t.parentElement !== (abierto || document.body)) (abierto || document.body).append(t);
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
@@ -60,8 +63,22 @@ export function mostrarErrores(form, err, avisoEl) {
   if (primero) primero.focus(); else if (avisoEl && sueltos.length) avisoEl.scrollIntoView({ block: 'center' });
 }
 
+/** Abreviatura de cada unidad de medida, la que se muestra dentro de los campos de cantidad. */
+export const UNIDAD = { g: 'g', kg: 'kg', ml: 'ml', l: 'l', unidad: 'u.' };
+
+/** Pone la unidad dentro del cuadro del número, a la derecha (entre el texto y las flechas). */
+export function conUnidad(input, unidad) {
+  input.classList.add('con-unidad');
+  return h('span', { class: 'unit-input' }, input, h('span', { class: 'unit', 'aria-hidden': 'true' }, UNIDAD[unidad] || unidad));
+}
+
+/** Cambia la unidad que muestra un campo armado con conUnidad (o con campo({ unit })). */
+export function cambiarUnidad(contenedor, unidad) {
+  contenedor.querySelectorAll('.unit').forEach((u) => { u.textContent = UNIDAD[unidad] || unidad; });
+}
+
 /** Campo de formulario con etiqueta visible, ayuda y atributos de accesibilidad. */
-export function campo({ opcional = true, id, name, label, type = 'text', value = '', hint, required, autocomplete, inputmode, min, max, step, maxlength, options, children }) {
+export function campo({ opcional = true, id, name, label, type = 'text', value = '', hint, required, autocomplete, inputmode, min, max, step, maxlength, options, unit, children }) {
   const hintId = hint ? `${id}-hint` : null;
   let control;
   if (options) {
@@ -69,6 +86,7 @@ export function campo({ opcional = true, id, name, label, type = 'text', value =
       options.map(([v, t]) => h('option', { value: v, selected: String(v) === String(value) }, t)));
   } else {
     control = h('input', { id, name: name || id, type, value, required, autocomplete, inputmode, min, max, step, maxlength, 'aria-describedby': hintId });
+    if (unit) control = conUnidad(control, unit);
   }
   return h('div', { class: 'field' },
     h('label', { for: id }, label, required || options || !opcional ? '' : ' (opcional)'),
@@ -90,6 +108,38 @@ export async function ocupado(btn, texto, fn) {
   btn.disabled = true;
   btn.textContent = texto;
   try { return await fn(); } finally { btn.disabled = false; btn.textContent = original; }
+}
+
+/**
+ * Ventana emergente sobre la página (dialog nativo: bloquea el fondo, Esc la cierra y el foco queda dentro).
+ * Devuelve { cuerpo, cerrar }. Al cerrarse por cualquier vía se quita del DOM y se llama alCerrar.
+ */
+export function modal(titulo, { ancho = '', alCerrar } = {}) {
+  const tituloId = `modal-${Date.now()}`;
+  const cuerpo = h('div', { class: 'modal-body' });
+  const dlg = h('dialog', { class: `modal ${ancho}`, 'aria-labelledby': tituloId },
+    h('div', { class: 'modal-head' }, h('h2', { id: tituloId }, titulo),
+      h('button', { type: 'button', class: 'modal-x', 'aria-label': 'Cerrar ventana', onclick: () => dlg.close() }, '×')),
+    cuerpo);
+  dlg.addEventListener('close', () => {
+    const aviso = dlg.querySelector('#toast'); // si toast() lo movió adentro, vuelve a la página antes de borrar la ventana
+    if (aviso) document.body.append(aviso);
+    dlg.remove();
+    if (alCerrar) alCerrar();
+  });
+  document.body.append(dlg);
+  dlg.showModal();
+  return { cuerpo, dlg, cerrar: () => { if (dlg.open) dlg.close(); } };
+}
+
+/** Descarga un texto como archivo, sin pasar por el servidor. */
+export function descargar(nombre, contenido, tipo) {
+  const url = URL.createObjectURL(new Blob([contenido], { type: tipo }));
+  const a = h('a', { href: url, download: nombre, hidden: true });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const ESTADOS = {
