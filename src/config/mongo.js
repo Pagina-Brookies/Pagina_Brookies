@@ -73,7 +73,7 @@ async function withTx(fn) {
   }
 }
 
-const COLLECTIONS = ['usuarios', 'productos', 'insumos', 'pedidos', 'reservas', 'counters'];
+const COLLECTIONS = ['usuarios', 'productos', 'insumos', 'pedidos', 'reservas', 'counters', 'imagenes'];
 
 /** Crea las colecciones y los índices del diseño (sección 7.5 del informe). Se puede repetir sin problema. */
 async function ensureIndexes() {

@@ -25,6 +25,7 @@ router.post('/api/v1/auth/register', authLimiter, w(auth.register));
 router.post('/api/v1/auth/login', authLimiter, w(auth.login));
 router.get('/api/v1/products', w(productos.list));
 router.get('/api/v1/products/:id', w(productos.getById));
+router.get('/media/productos/:id', w(productos.getImage));
 
 // Cuenta (cualquier usuario con sesión; el perfil editable es del cliente)
 router.get('/api/v1/users/me', requireAuth, w(auth.me));
@@ -49,6 +50,10 @@ router.delete('/api/v1/products/:id', ...admin, w(productos.remove));
 router.post('/api/v1/products/:id/recipe', ...admin, w(productos.addRecipeItem));
 router.delete('/api/v1/products/:id/recipe/:idInsumo', ...admin, w(productos.removeRecipeItem));
 router.post('/api/v1/products/:id/sell', ...admin, w(productos.sell));
+// la imagen viaja como binario (no JSON); el frontend la achica antes de subirla, 2 MB es margen de sobra
+const imagen = express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '2mb' });
+router.put('/api/v1/products/:id/image', ...admin, imagen, w(productos.putImage));
+router.delete('/api/v1/products/:id/image', ...admin, w(productos.removeImage));
 
 // Inventario y reportes: administrador
 router.get('/api/v1/supplies', ...admin, w(insumos.list));
@@ -57,6 +62,7 @@ router.get('/api/v1/supplies/:id', ...admin, w(insumos.getById));
 router.put('/api/v1/supplies/:id', ...admin, w(insumos.update));
 router.delete('/api/v1/supplies/:id', ...admin, w(insumos.remove));
 router.patch('/api/v1/supplies/:id/restock', ...admin, w(insumos.restock));
+router.patch('/api/v1/supplies/:id/withdraw', ...admin, w(insumos.withdraw));
 router.get('/api/v1/reports/queries', ...admin, w(reportes.queries));
 router.get('/api/v1/reports/top-products', ...admin, w(reportes.topProducts));
 router.get('/api/v1/reports/critical-supplies', ...admin, w(reportes.criticalSupplies));

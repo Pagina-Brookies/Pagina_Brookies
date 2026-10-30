@@ -15,7 +15,6 @@ const nav = {
 const RUTAS = [
   [/^\/$/, (r, n) => C.menu(r, n), 'Menú', null],
   [/^\/carrito$/, (r, n) => C.carrito(r, n), 'Tu pedido', null],
-  [/^\/pago\/(\d+)$/, (r, n, m) => C.pago(r, n, m[1]), 'Pago', 'cliente'],
   [/^\/pedido\/(\d+)$/, (r, n, m, q) => C.pedido(r, n, m[1], q), 'Pedido', 'sesion'],
   [/^\/pedidos$/, (r) => C.pedidos(r), 'Mis pedidos', 'cliente'],
   [/^\/perfil$/, (r) => C.perfil(r), 'Mi perfil', 'sesion'],
@@ -56,6 +55,7 @@ function render() {
   const query = new URLSearchParams(qs || '');
   const hit = RUTAS.map((r) => [r, r[0].exec(ruta)]).find(([, m]) => m);
   root.replaceChildren();
+  root.classList.toggle('full', ruta === '/'); // el menú usa todo el ancho de la pantalla
   navEl.classList.remove('open');
   document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
   pintarNav();
@@ -80,6 +80,16 @@ document.getElementById('nav-toggle').addEventListener('click', (e) => {
   const open = navEl.classList.toggle('open');
   e.currentTarget.setAttribute('aria-expanded', String(open));
 });
+// Logo: si existe img/mascota.png (la mascota de Brookies) se usa en vez del logo genérico.
+const mascota = new Image();
+mascota.onload = () => {
+  document.querySelector('.brand img').src = mascota.src;
+  const icono = document.querySelector('link[rel="icon"]');
+  icono.type = 'image/png';
+  icono.href = mascota.src;
+};
+mascota.src = 'img/mascota.png';
+
 window.addEventListener('hashchange', render);
 window.addEventListener('carrito', pintarNav);
 window.addEventListener('sesion-vencida', () => { sessionStorage.setItem('brookies.vuelta', location.hash); location.hash = '#/ingresar'; render(); });

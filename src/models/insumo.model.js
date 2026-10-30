@@ -60,6 +60,20 @@ async function restock(id, cantidad) {
 }
 
 /**
+ * Corrección del stock hacia abajo (por ejemplo, si se reabasteció de más). Solo descuenta del stock libre:
+ * lo que está reservado por un pago en curso no se puede quitar. Devuelve null si no existe y false si no alcanza.
+ */
+async function withdraw(id, cantidad) {
+  const res = await col('insumos').findOneAndUpdate(
+    { _id: id, $expr: { $gte: [{ $subtract: ['$stock_actual', { $ifNull: ['$stock_reservado', 0] }] }, cantidad] } },
+    { $inc: { stock_actual: -cantidad } },
+    { returnDocument: 'after' }
+  );
+  if (res) return toInsumo(res);
+  return (await col('insumos').findOne({ _id: id }, { projection: { _id: 1 } })) ? false : null;
+}
+
+/**
  * RF11: edita un insumo. Si cambia el nombre o la unidad se actualizan las copias que llevan las recetas,
  * y si cambia una marca de alérgeno se recalcula apto_para de los productos que lo usan (ver informe 7.2).
  */
@@ -100,4 +114,4 @@ async function remove(id) {
   return res.deletedCount > 0;
 }
 
-module.exports = { findAll, findById, create, restock, update, remove, nameExists, inUse, toInsumo };
+module.exports = { findAll, findById, create, restock, withdraw, update, remove, nameExists, inUse, toInsumo };

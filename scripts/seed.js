@@ -3,7 +3,7 @@
 /**
  * Carga los datos de demostración (data/seed.json) en la base. BORRA las colecciones del sistema y las vuelve a crear.
  * Uso:  npm run db:seed        (usa MONGODB_URI y MONGODB_DB del entorno o del archivo .env)
- * Cuentas de prueba: admin@brookies.example y camila.rojas@example.com, contraseña demo1234.
+ * Cuentas de prueba: admin@brookies.example y ignacia.valdebenito@clientes.brookies.example, contraseña demo1234.
  */
 require('dotenv').config();
 const fs = require('fs');

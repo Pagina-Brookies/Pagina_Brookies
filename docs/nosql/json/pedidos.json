@@ -1,7 +1,7 @@
 [
   {
     "_id": 1,
-    "cliente": { "_id": 2, "nombre": "Camila Rojas" },
+    "cliente": { "_id": 2, "nombre": "Ignacia Valdebenito" },
     "fecha": { "$date": "2026-09-14T13:05:00Z" },
     "estado": "listo",
     "total": 7700,
@@ -19,7 +19,7 @@
   },
   {
     "_id": 4,
-    "cliente": { "_id": 2, "nombre": "Camila Rojas" },
+    "cliente": { "_id": 2, "nombre": "Ignacia Valdebenito" },
     "fecha": { "$date": "2026-09-18T15:10:00Z" },
     "estado": "recibido",
     "total": 6900,

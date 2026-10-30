@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Plantilla común de los reportes de Brookies Coffee.
+  El panel de administración la descarga y reemplaza cada marcador {{...}} por el valor actual:
+  {{titulo}}, {{descripcion}}, {{fecha}}, {{usuario}}, {{total_filas}}, {{resumen}} y {{tabla}}.
+  Para cambiar el diseño de todos los reportes basta con editar este archivo.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{titulo}} | Brookies Coffee</title>
+  <style>
+    :root { --cafe: #3b2a1c; --oro: #b97a12; --borde: #ddd2c3; --suave: #f7f2ea; --texto: #231a12; --gris: #6b5d4d; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--texto); background: #fff; line-height: 1.45; }
+    .hoja { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; border-bottom: 4px solid var(--oro); padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .marca { font-size: 1.4rem; font-weight: 800; color: var(--cafe); letter-spacing: .02em; }
+    .marca small { display: block; font-size: .85rem; font-weight: 500; color: var(--gris); letter-spacing: 0; }
+    .meta { text-align: right; font-size: .9rem; color: var(--gris); }
+    h1 { font-size: 1.6rem; margin: 0 0 .4rem; color: var(--cafe); }
+    .descripcion { margin: 0 0 1.25rem; color: var(--gris); }
+    .resumen { background: var(--suave); border-left: 5px solid var(--oro); padding: .75rem 1rem; margin: 0 0 1.25rem; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+    th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--borde); }
+    th { background: var(--cafe); color: #fff; font-weight: 600; }
+    tbody tr:nth-child(even) { background: var(--suave); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .vacio { padding: 1.5rem; text-align: center; color: var(--gris); border: 2px dashed var(--borde); }
+    footer { margin-top: 2rem; padding-top: .75rem; border-top: 1px solid var(--borde); font-size: .8rem; color: var(--gris); display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    @media print { .hoja { padding: 0; } .no-imprimir { display: none; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="hoja">
+    <header>
+      <div class="marca">Brookies Coffee<small>Reporte de administración</small></div>
+      <div class="meta">Generado el {{fecha}}<br>por {{usuario}}</div>
+    </header>
+    <h1>{{titulo}}</h1>
+    <p class="descripcion">{{descripcion}}</p>
+    <p class="resumen">{{resumen}}</p>
+    {{tabla}}
+    <footer>
+      <span>{{total_filas}} filas · Datos al momento de la descarga</span>
+      <span class="no-imprimir">Para guardarlo como PDF: Imprimir (Ctrl + P) → Guardar como PDF</span>
+    </footer>
+  </div>
+</body>
+</html>

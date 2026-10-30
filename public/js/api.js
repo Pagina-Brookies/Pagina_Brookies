@@ -26,11 +26,12 @@ export class ApiError extends Error {
 
 export async function api(method, url, body) {
   const headers = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const binario = body instanceof Blob; // imágenes: viajan tal cual, con su tipo
+  if (body !== undefined) headers['Content-Type'] = binario ? body.type : 'application/json';
   if (sesion) headers.Authorization = `Bearer ${sesion.token}`;
   let res;
   try {
-    res = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(url, { method, headers, body: body === undefined || binario ? body : JSON.stringify(body) });
   } catch (e) {
     throw new ApiError(0, [{ message: 'No hay conexión con el servidor. Revise su internet e intente de nuevo.' }]);
   }
@@ -43,7 +44,7 @@ export async function api(method, url, body) {
   if (!res.ok) {
     const errors = json && Array.isArray(json.errors) && json.errors.length
       ? json.errors.map((e) => (typeof e === 'string' ? { message: e } : e))
-      : [{ message: res.status === 429 ? 'Demasiados intentos. Espere unos minutos.' : 'Ocurrió un error inesperado. Intente de nuevo.' }];
+      : [{ message: res.status === 429 ? 'Demasiados intentos. Espere unos minutos.' : res.status === 413 ? 'El archivo es demasiado grande.' : 'Ocurrió un error inesperado. Intente de nuevo.' }];
     throw new ApiError(res.status, errors);
   }
   return json.data;

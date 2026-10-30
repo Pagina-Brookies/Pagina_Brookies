@@ -8,9 +8,9 @@
 -- Usuarios: 1 administrador y 3 clientes
 INSERT INTO usuario (id_usuario, nombre, correo, contrasena_hash, fecha_registro, ultimo_acceso, activo) VALUES
 (1, 'Administrador Brookies', 'admin@brookies.example',  '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-01', '2026-09-19 09:00:00', TRUE),
-(2, 'Camila Rojas',           'camila.rojas@example.com', '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-10', '2026-09-18 12:05:00', TRUE),
-(3, 'Diego Pérez',            'diego.perez@example.com',  '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-12', '2026-09-19 10:55:00', TRUE),
-(4, 'Valentina Soto',         'valentina.soto@example.com', '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-20', '2026-09-17 09:35:00', TRUE);
+(2, 'Ignacia Valdebenito',    'ignacia.valdebenito@clientes.brookies.example', '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-10', '2026-09-18 12:05:00', TRUE),
+(3, 'Bastián Quezada',        'bastian.quezada@clientes.brookies.example',     '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-12', '2026-09-19 10:55:00', TRUE),
+(4, 'Florencia Arancibia',    'florencia.arancibia@clientes.brookies.example', '$2b$10$8.WvVNbcUmiB03Z5ueDQZ.FucsG7ag4AEwnmIjNONiGe6Y/4oZI8C', '2026-08-20', '2026-09-17 09:35:00', TRUE);
 
 INSERT INTO administrador (id_usuario, cargo, fecha_asignacion) VALUES
 (1, 'Dueño', '2026-08-01');
