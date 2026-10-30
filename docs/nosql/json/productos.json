@@ -7,7 +7,7 @@
     "categoria": "Café",
     "tipo_preparacion": "caliente",
     "disponible": true,
-    "apto_para": ["sin_gluten"],
+    "apto_para": [],
     "receta": [
       { "insumo_id": 1, "nombre": "Café molido", "unidad_medida": "g", "cantidad_requerida": 16 },
       { "insumo_id": 2, "nombre": "Leche entera", "unidad_medida": "ml", "cantidad_requerida": 200 }

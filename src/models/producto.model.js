@@ -114,21 +114,28 @@ async function nameExists(nombre, exceptId = 0) {
   return Boolean(d);
 }
 
-/** apto_para sale de los insumos de la receta: apto para X si tiene receta y ningún insumo tiene la marca. */
-async function computeApto(receta) {
+/** "Sin gluten" solo se ofrece en estas categorías: un café o un té nunca lleva gluten, así que ahí la etiqueta no informa nada. */
+const SIN_GLUTEN_EN = ['Galleta'];
+
+/**
+ * apto_para sale de los insumos de la receta: apto para X si tiene receta y ningún insumo tiene la marca.
+ * La marca sin_gluten además depende de la categoría (ver SIN_GLUTEN_EN).
+ */
+async function computeApto(receta, categoria) {
   if (!receta || receta.length === 0) return [];
   const ins = await col('insumos').find({ _id: { $in: receta.map((r) => r.insumo_id) } }).toArray();
   const apto = [];
   for (const [clave, flag] of Object.entries(SUITABLE_FLAG)) {
+    if (clave === 'sin_gluten' && !SIN_GLUTEN_EN.includes(categoria)) continue;
     if (!ins.some((i) => i[flag])) apto.push(clave);
   }
   return apto;
 }
 
 async function recomputeApto(idProducto) {
-  const p = await col('productos').findOne({ _id: idProducto }, { projection: { receta: 1 } });
+  const p = await col('productos').findOne({ _id: idProducto }, { projection: { receta: 1, categoria: 1 } });
   if (!p) return;
-  await col('productos').updateOne({ _id: idProducto }, { $set: { apto_para: await computeApto(p.receta) } });
+  await col('productos').updateOne({ _id: idProducto }, { $set: { apto_para: await computeApto(p.receta, p.categoria) } });
 }
 
 async function recomputeAptoByInsumo(idInsumo) {
@@ -163,6 +170,7 @@ async function update(id, data) {
     disponible: data.disponible,
   } });
   if (res.matchedCount === 0) return null;
+  await recomputeApto(id); // si cambió la categoría, cambia si corresponde "sin gluten"
   return findById(id);
 }
 

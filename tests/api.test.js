@@ -84,6 +84,8 @@ test('menú público con disponibilidad efectiva y filtros', { skip }, async () 
   const sg = await call('GET', '/api/v1/products?suitable_for=sin_gluten');
   assert.ok(sg.body.data.length > 0);
   assert.ok(sg.body.data.every((p) => p.apto_para.includes('sin_gluten')));
+  // café y té no se etiquetan "sin gluten": solo las galletas
+  assert.ok(sg.body.data.every((p) => p.categoria === 'Galleta'));
 });
 
 test('reserva, pago rechazado, pago aprobado y descuento de stock', { skip }, async () => {
@@ -155,7 +157,9 @@ test('recetas, insumos y reglas que reemplazan a las FK', { skip }, async () => 
   assert.strictEqual(p.status, 201);
   const rc = await call('POST', `/api/v1/products/${p.body.data.id_producto}/recipe`, { token: a, body: { id_insumo: 4, cantidad_requerida: 10 } });
   assert.strictEqual(rc.status, 201);
-  assert.deepStrictEqual(rc.body.data.apto_para.sort(), ['sin_gluten', 'sin_lactosa', 'vegano']);
+  assert.deepStrictEqual(rc.body.data.apto_para.sort(), ['sin_lactosa', 'vegano']); // un té no lleva la marca sin gluten
+  const comoGalleta = await call('PUT', `/api/v1/products/${p.body.data.id_producto}`, { token: a, body: { nombre: 'Chai', descripcion: 'Té', precio: 3000, categoria: 'Galleta', tipo_preparacion: 'no_aplica', disponible: true } });
+  assert.deepStrictEqual(comoGalleta.body.data.apto_para.sort(), ['sin_gluten', 'sin_lactosa', 'vegano']); // al cambiar de categoría se recalcula
   const rs = await call('PATCH', '/api/v1/supplies/4/restock', { token: a, body: { cantidad: 100 } });
   assert.strictEqual(rs.status, 200);
   const rep = await call('GET', '/api/v1/reports/critical-supplies', { token: a });

@@ -26,7 +26,7 @@ export function menu(root, nav) {
   function pintarChips() {
     chips.replaceChildren(...CATEGORIAS.map((c) => h('button', {
       type: 'button', class: 'chip', 'aria-pressed': String(f.category === c),
-      onclick: () => { f.category = c; pintarChips(); cargar(); },
+      onclick: () => { f.category = c; pintarChips(); ajustarApto(); cargar(); },
     }, c === 'todas' ? 'Todas' : c)));
   }
 
@@ -57,6 +57,15 @@ export function menu(root, nav) {
     contador.hidden = !activos;
     contador.textContent = String(activos);
     contador.setAttribute('aria-label', `${activos} activos`);
+  }
+  // café y té no llevan gluten: "Sin gluten" solo se ofrece en Todas y Galleta
+  function ajustarApto() {
+    const sel = panel.querySelector('#f-apto');
+    const opcion = sel.querySelector('option[value="sin_gluten"]');
+    const aplica = f.category === 'todas' || f.category === 'Galleta';
+    opcion.hidden = !aplica;
+    opcion.disabled = !aplica;
+    if (!aplica && sel.value === 'sin_gluten') { sel.value = ''; leerFiltros(); }
   }
   panel.addEventListener('input', (e) => {
     leerFiltros();
@@ -391,13 +400,13 @@ export async function local(root) {
     const q = encodeURIComponent(l.mapa.consulta);
     const mapa = h('section', { class: 'panel mapa', 'aria-labelledby': 'mapa-h' },
       h('h2', { id: 'mapa-h' }, 'Cómo llegar'),
-      l.mapa.referencial ? alerta('info', 'Ubicación referencial.', 'El local todavía no abre: el mapa muestra la zona donde estará.') : null,
+      l.mapa.referencial ? alerta('info', 'El local todavía no abre.', `El mapa muestra dónde estará: ${l.direccion.charAt(0).toLowerCase()}${l.direccion.slice(1)}.`) : null,
       h('iframe', { class: 'mapa-frame', title: `Mapa: ${l.mapa.consulta}`, src: `https://www.google.com/maps?q=${q}&z=16&output=embed`, loading: 'lazy', referrerpolicy: 'no-referrer-when-downgrade' }),
       h('p', {}, h('a', { href: `https://www.google.com/maps/search/?api=1&query=${q}`, target: '_blank', rel: 'noopener' }, 'Abrir en Google Maps'), h('span', { class: 'sr-only' }, ' (se abre en otra pestaña)')));
     root.replaceChildren(h('h1', {}, 'El local'),
       h('div', { class: 'local-grid' },
         h('div', { class: 'local-info' },
-          h('div', { class: 'panel' }, h('h2', {}, 'Dónde estamos'), h('p', {}, l.direccion)),
+          h('div', { class: 'panel' }, h('h2', {}, l.mapa.referencial ? 'Dónde estaremos' : 'Dónde estamos'), h('p', {}, l.direccion)),
           h('div', { class: 'panel' }, h('h2', {}, 'Horarios'), h('ul', {}, l.horarios.map((x) => h('li', {}, h('strong', {}, `${x.dias}: `), x.horario)))),
           h('div', { class: 'panel' }, h('h2', {}, 'Contacto y ayuda'), h('p', {}, 'Teléfono: ', h('a', { href: `tel:${l.telefono.replace(/\s/g, '')}` }, l.telefono)), h('p', {}, 'Correo: ', h('a', { href: `mailto:${l.correo_contacto}` }, l.correo_contacto)))),
         mapa));

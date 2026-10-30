@@ -9,11 +9,11 @@ const { ok } = require('../utils/respond');
 function info(req, res) {
   return ok(res, {
     nombre: 'Brookies Coffee',
-    direccion: process.env.LOCAL_DIRECCION || 'Calle Ejemplo 123, Valparaíso',
-    // mientras el local no abra, el mapa muestra una zona de referencia; con LOCAL_MAPA se fija el punto real
+    direccion: process.env.LOCAL_DIRECCION || 'Junto a la Copec de Av. Borgoño 25175, Concón',
+    // el local todavía no abre: el mapa marca la Copec de Concón junto a la que estará. LOCAL_ABIERTO=true quita el aviso
     mapa: {
-      consulta: process.env.LOCAL_MAPA || 'Plaza Sotomayor, Valparaíso, Chile',
-      referencial: !process.env.LOCAL_MAPA,
+      consulta: process.env.LOCAL_MAPA || 'COPEC, Av. Borgoño 25175, Concón, Valparaíso, Chile',
+      referencial: process.env.LOCAL_ABIERTO !== 'true',
     },
     telefono: process.env.LOCAL_TELEFONO || '+56 9 1111 1111',
     correo_contacto: process.env.LOCAL_CORREO || 'contacto@brookies.example',

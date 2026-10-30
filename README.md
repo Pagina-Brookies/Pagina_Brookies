@@ -31,7 +31,7 @@ MONGODB_DB=brookies
 JWT_SECRET=<texto aleatorio de al menos 16 caracteres>
 ```
 
-Opcionales: `PORT` (3000), `JWT_EXPIRES_IN` (8h), `RATE_LIMIT` (300 por 15 min), `AUTH_RATE_LIMIT` (20 por 15 min), `RESERVA_MINUTOS` (10) y `MONGO_TX=off` para un MongoDB sin replica set. Para la pantalla del local: `LOCAL_DIRECCION`, `LOCAL_TELEFONO`, `LOCAL_CORREO`, `LOCAL_HORARIO_SEMANA`, `LOCAL_HORARIO_FINDE` y `LOCAL_MAPA` (lo que se busca en Google Maps; sin ella el mapa muestra una ubicación referencial).
+Opcionales: `PORT` (3000), `JWT_EXPIRES_IN` (8h), `RATE_LIMIT` (300 por 15 min), `AUTH_RATE_LIMIT` (20 por 15 min), `RESERVA_MINUTOS` (10) y `MONGO_TX=off` para un MongoDB sin replica set. Para la pantalla del local: `LOCAL_DIRECCION`, `LOCAL_TELEFONO`, `LOCAL_CORREO`, `LOCAL_HORARIO_SEMANA`, `LOCAL_HORARIO_FINDE`, `LOCAL_MAPA` (lo que se busca en Google Maps; por defecto, la Copec de Av. Borgoño 25175, Concón, junto a la que estará el local) y `LOCAL_ABIERTO=true` para quitar el aviso de que el local aún no abre.
 
 Logo: `public/img/brookies-logo.png` (barra superior) y `public/img/favicon.png` (ícono de la pestaña). `public/img/logo.svg` queda como relleno de los productos sin foto.
 
