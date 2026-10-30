@@ -1,186 +1,237 @@
 'use strict';
 
-const db = require('../config/db');
-const { escapeLike } = require('../utils/validators');
+const { col, nextId, LOOSE } = require('../config/mongo');
+const { HttpError } = require('../utils/errors');
 
-// Un producto sin receta no se puede vender ni clasificar: sin esta condición, los NOT EXISTS
-// de abajo darían verdadero con una receta vacía (apto para todo y "disponible").
-const HAS_RECIPE = 'EXISTS (SELECT 1 FROM receta rr WHERE rr.id_producto = p.id_producto)';
-
-// Un producto está disponible si el administrador lo dejó en el menú (disponible = TRUE),
-// tiene receta y hay stock suficiente de cada insumo de ella.
-const STOCK_OK = `NOT EXISTS (
-    SELECT 1
-    FROM receta r
-    JOIN insumo i ON i.id_insumo = r.id_insumo
-    WHERE r.id_producto = p.id_producto
-      AND i.stock_actual < r.cantidad_requerida
-)`;
-const EFFECTIVE_AVAILABLE = `(p.disponible = TRUE AND ${HAS_RECIPE} AND ${STOCK_OK})`;
-
-// Columna de insumo que revisa cada filtro "apto para". Sale de esta lista fija,
-// nunca del texto que envía el usuario, por eso es seguro escribirla en la consulta.
 const SUITABLE_FLAG = {
   sin_gluten: 'contiene_gluten',
   sin_lactosa: 'contiene_lactosa',
   vegano: 'es_origen_animal',
 };
 
-// Un producto es apto para X si tiene receta y ningún insumo de ella tiene la marca correspondiente.
-const aptoPara = (flag) => `${HAS_RECIPE} AND NOT EXISTS (
-    SELECT 1 FROM receta ra JOIN insumo ia ON ia.id_insumo = ra.id_insumo
-    WHERE ra.id_producto = p.id_producto AND ia.${flag} = TRUE)`;
+/** Escapa el texto del usuario para usarlo literal dentro de una expresión regular. */
+const escapeRegex = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const SELECT_COLUMNS = `
-    p.id_producto, p.nombre, p.descripcion, p.precio, p.categoria, p.tipo_preparacion,
-    p.disponible, ${EFFECTIVE_AVAILABLE} AS disponible_efectivo,
-    (${aptoPara('contiene_gluten')}) AS apto_sin_gluten,
-    (${aptoPara('contiene_lactosa')}) AS apto_sin_lactosa,
-    (${aptoPara('es_origen_animal')}) AS apto_vegano`;
+/** Regex que ignora mayúsculas y tildes: "cafe" encuentra "Café". */
+function looseRegex(text) {
+  const map = { a: '[aáàäâ]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöô]', u: '[uúùüû]', n: '[nñ]' };
+  const base = String(text).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return new RegExp(escapeRegex(base).replace(/[aeioun]/gi, (c) => map[c.toLowerCase()]), 'i');
+}
 
-function toProduct(row) {
-  const { apto_sin_gluten, apto_sin_lactosa, apto_vegano, ...rest } = row;
-  const apto_para = [];
-  if (apto_sin_gluten) apto_para.push('sin_gluten');
-  if (apto_sin_lactosa) apto_para.push('sin_lactosa');
-  if (apto_vegano) apto_para.push('vegano');
-  return {
-    ...rest,
-    disponible: Boolean(row.disponible),
-    disponible_efectivo: Boolean(row.disponible_efectivo),
-    apto_para,
+/**
+ * Etapas del pipeline que calculan la disponibilidad efectiva (consulta 03 / Q1).
+ * Un producto está disponible si el administrador lo dejó en el menú, tiene receta y para cada insumo de la
+ * receta queda stock libre (stock_actual - stock_reservado) suficiente. La disponibilidad no se guarda porque
+ * cambia con cada venta: se calcula al consultar. Un producto sin receta nunca queda disponible.
+ */
+const STOCK_STAGES = [
+  { $lookup: { from: 'insumos', localField: 'receta.insumo_id', foreignField: '_id', as: '_ins' } },
+  { $addFields: {
+    _faltantes: { $size: { $filter: {
+      input: '$receta',
+      as: 'r',
+      cond: { $let: {
+        vars: { i: { $arrayElemAt: [{ $filter: { input: '$_ins', as: 'x', cond: { $eq: ['$$x._id', '$$r.insumo_id'] } } }, 0] } },
+        in: { $lt: [
+          { $subtract: [{ $ifNull: ['$$i.stock_actual', 0] }, { $ifNull: ['$$i.stock_reservado', 0] }] },
+          '$$r.cantidad_requerida',
+        ] },
+      } },
+    } } },
+  } },
+  { $addFields: {
+    disponible_efectivo: { $and: ['$disponible', { $gt: [{ $size: '$receta' }, 0] }, { $eq: ['$_faltantes', 0] }] },
+  } },
+];
+
+function toProduct(d, withRecipe = false) {
+  const out = {
+    id_producto: d._id,
+    nombre: d.nombre,
+    descripcion: d.descripcion === undefined ? null : d.descripcion,
+    precio: d.precio,
+    categoria: d.categoria,
+    tipo_preparacion: d.tipo_preparacion,
+    disponible: Boolean(d.disponible),
+    disponible_efectivo: Boolean(d.disponible_efectivo),
+    apto_para: d.apto_para || [],
   };
+  if (withRecipe) {
+    out.receta = (d.receta || [])
+      .map((r) => ({ id_insumo: r.insumo_id, nombre: r.nombre, unidad_medida: r.unidad_medida, cantidad_requerida: r.cantidad_requerida }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+  }
+  return out;
 }
 
-/** true si ya existe otro producto con ese nombre (la comparación ignora mayúsculas y tildes). */
-async function nameExists(nombre, exceptId = 0) {
-  const rows = await db.execute('SELECT 1 FROM producto WHERE nombre = ? AND id_producto <> ? LIMIT 1', [nombre, exceptId]);
-  return rows.length > 0;
+/** Unidades vendidas por producto (suma de items en pedidos): sirve para el orden "más vendido". */
+async function soldMap() {
+  const rows = await col('pedidos').aggregate([
+    { $unwind: '$items' },
+    { $group: { _id: '$items.producto_id', unidades: { $sum: '$items.cantidad' } } },
+  ]).toArray();
+  return new Map(rows.map((r) => [r._id, r.unidades]));
 }
 
-/**
- * Consulta de productos (RF04). Los valores del usuario viajan siempre como parámetros (?).
- */
+/** Consulta de productos con filtros (RF04, consulta 03). El texto del usuario nunca se concatena: va como valor. */
 async function findAll({ category, onlyAvailable, name, suitableFor, preparation, sort }) {
-  const where = [];
-  const params = [];
+  const match = {};
+  if (category && category !== 'todas') match.categoria = category;
+  if (name) match.nombre = looseRegex(name);
+  if (suitableFor) match.apto_para = suitableFor;
+  if (preparation) match.tipo_preparacion = preparation;
 
-  if (category && category !== 'todas') {
-    where.push('p.categoria = ?');
-    params.push(category);
-  }
-  if (onlyAvailable) {
-    where.push(EFFECTIVE_AVAILABLE);
-  }
-  if (name) {
-    where.push("p.nombre LIKE ? ESCAPE '\\\\'");
-    params.push(`%${escapeLike(name)}%`);
-  }
-  if (suitableFor) {
-    where.push(`(${aptoPara(SUITABLE_FLAG[suitableFor])})`);
-  }
-  if (preparation) {
-    where.push('p.tipo_preparacion = ?');
-    params.push(preparation);
-  }
+  const pipeline = [{ $match: match }, ...STOCK_STAGES];
+  if (onlyAvailable) pipeline.push({ $match: { disponible_efectivo: true } });
+  pipeline.push({ $project: { _ins: 0, _faltantes: 0 } });
+  if (sort === 'precio') pipeline.push({ $sort: { precio: 1, nombre: 1 } });
+  else pipeline.push({ $sort: { nombre: 1 } });
 
-  let orderBy = 'p.nombre ASC';
-  if (sort === 'precio') {
-    orderBy = 'p.precio ASC, p.nombre ASC';
-  } else if (sort === 'mas_vendido') {
-    orderBy = `(SELECT COALESCE(SUM(d.cantidad), 0) FROM detalle_pedido d
-                WHERE d.id_producto = p.id_producto) DESC, p.nombre ASC`;
+  let docs = await col('productos').aggregate(pipeline, { collation: LOOSE }).toArray();
+  if (sort === 'mas_vendido') {
+    const sold = await soldMap();
+    docs = docs.sort((a, b) => (sold.get(b._id) || 0) - (sold.get(a._id) || 0) || a.nombre.localeCompare(b.nombre, 'es'));
   }
-
-  const sql = `SELECT ${SELECT_COLUMNS}
-               FROM producto p
-               ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
-               ORDER BY ${orderBy}`;
-  const rows = await db.execute(sql, params);
-  return rows.map(toProduct);
+  return docs.map((d) => toProduct(d));
 }
 
-/** Un producto con los insumos de su receta, o null si no existe. */
+/** Varios productos por id, con disponibilidad efectiva y receta (los usa el pedido). */
+async function findManyWithStock(ids, session) {
+  const docs = await col('productos').aggregate([{ $match: { _id: { $in: ids } } }, ...STOCK_STAGES, { $project: { _ins: 0 } }], { session }).toArray();
+  return docs;
+}
+
 async function findById(id) {
-  const rows = await db.execute(`SELECT ${SELECT_COLUMNS} FROM producto p WHERE p.id_producto = ?`, [id]);
-  if (rows.length === 0) return null;
-
-  const receta = await db.execute(
-    `SELECT i.id_insumo, i.nombre, i.unidad_medida, r.cantidad_requerida
-     FROM receta r
-     JOIN insumo i ON i.id_insumo = r.id_insumo
-     WHERE r.id_producto = ?
-     ORDER BY i.nombre`,
-    [id]
-  );
-  return { ...toProduct(rows[0]), receta };
+  const docs = await col('productos').aggregate([{ $match: { _id: id } }, ...STOCK_STAGES, { $project: { _ins: 0, _faltantes: 0 } }]).toArray();
+  return docs.length ? toProduct(docs[0], true) : null;
 }
 
-/** RF15 — agregar un producto al menú. */
+async function nameExists(nombre, exceptId = 0) {
+  const d = await col('productos').findOne({ nombre, _id: { $ne: exceptId } }, { collation: LOOSE, projection: { _id: 1 } });
+  return Boolean(d);
+}
+
+/** apto_para sale de los insumos de la receta: apto para X si tiene receta y ningún insumo tiene la marca. */
+async function computeApto(receta) {
+  if (!receta || receta.length === 0) return [];
+  const ins = await col('insumos').find({ _id: { $in: receta.map((r) => r.insumo_id) } }).toArray();
+  const apto = [];
+  for (const [clave, flag] of Object.entries(SUITABLE_FLAG)) {
+    if (!ins.some((i) => i[flag])) apto.push(clave);
+  }
+  return apto;
+}
+
+async function recomputeApto(idProducto) {
+  const p = await col('productos').findOne({ _id: idProducto }, { projection: { receta: 1 } });
+  if (!p) return;
+  await col('productos').updateOne({ _id: idProducto }, { $set: { apto_para: await computeApto(p.receta) } });
+}
+
+async function recomputeAptoByInsumo(idInsumo) {
+  const prods = await col('productos').find({ 'receta.insumo_id': idInsumo }, { projection: { _id: 1 } }).toArray();
+  for (const p of prods) await recomputeApto(p._id);
+}
+
+/** Consulta 09 (INSERT): agregar un producto al menú. Nace sin receta. */
 async function create(data) {
-  const result = await db.execute(
-    `INSERT INTO producto (nombre, descripcion, precio, categoria, tipo_preparacion, disponible)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [data.nombre, data.descripcion, data.precio, data.categoria, data.tipo_preparacion, data.disponible]
-  );
-  return findById(result.insertId);
+  const _id = await nextId('productos');
+  await col('productos').insertOne({
+    _id,
+    nombre: data.nombre,
+    descripcion: data.descripcion,
+    precio: data.precio,
+    categoria: data.categoria,
+    tipo_preparacion: data.tipo_preparacion,
+    disponible: data.disponible,
+    apto_para: [],
+    receta: [],
+  });
+  return findById(_id);
 }
 
-/** RF12 — agregar un insumo a la receta de un producto (upsert de la cantidad). */
-async function addRecipeItem(idProducto, idInsumo, cantidadRequerida) {
-  await db.execute(
-    `INSERT INTO receta (id_producto, id_insumo, cantidad_requerida) VALUES (?, ?, ?)
-     ON DUPLICATE KEY UPDATE cantidad_requerida = VALUES(cantidad_requerida)`,
-    [idProducto, idInsumo, cantidadRequerida]
-  );
-  return findById(idProducto);
-}
-
-/** RF12 — quitar un insumo de la receta de un producto. Devuelve false si no existía esa fila. */
-async function removeRecipeItem(idProducto, idInsumo) {
-  const result = await db.execute('DELETE FROM receta WHERE id_producto = ? AND id_insumo = ?', [idProducto, idInsumo]);
-  return result.affectedRows > 0;
-}
-
-/**
- * RF10 — descuenta del inventario los insumos de la receta de un producto,
- * multiplicados por la cantidad vendida (consulta 07). Es una sola sentencia
- * UPDATE...JOIN: MySQL la aplica de forma atómica, así que si algún insumo
- * quedaría bajo cero la restricción CHECK rechaza el UPDATE completo y no
- * queda ningún insumo a medio descontar.
- */
-async function sellByRecipe(idProducto, cantidad) {
-  const result = await db.execute(
-    `UPDATE insumo i
-     JOIN receta r ON r.id_insumo = i.id_insumo
-     SET i.stock_actual = i.stock_actual - (r.cantidad_requerida * ?)
-     WHERE r.id_producto = ?`,
-    [cantidad, idProducto]
-  );
-  return result.affectedRows; // 0 => el producto no existe o no tiene receta
-}
-
-/** RF15 — editar un producto (reemplazo completo de los campos editables). Devuelve null si no existe. */
 async function update(id, data) {
-  const result = await db.execute(
-    `UPDATE producto
-     SET nombre = ?, descripcion = ?, precio = ?, categoria = ?, tipo_preparacion = ?, disponible = ?
-     WHERE id_producto = ?`,
-    [data.nombre, data.descripcion, data.precio, data.categoria, data.tipo_preparacion, data.disponible, id]
-  );
-  if (result.affectedRows === 0) return null;
+  const res = await col('productos').updateOne({ _id: id }, { $set: {
+    nombre: data.nombre,
+    descripcion: data.descripcion,
+    precio: data.precio,
+    categoria: data.categoria,
+    tipo_preparacion: data.tipo_preparacion,
+    disponible: data.disponible,
+  } });
+  if (res.matchedCount === 0) return null;
   return findById(id);
 }
 
-/**
- * RF15 — eliminar un producto. Si ya tiene ventas registradas, la FK
- * (DETALLE_PEDIDO.id_producto, ON DELETE RESTRICT) rechaza el DELETE, según
- * el supuesto del proyecto: un producto vendido no se elimina, se marca
- * disponible = false (con PUT).
- */
-async function remove(id) {
-  const result = await db.execute('DELETE FROM producto WHERE id_producto = ?', [id]);
-  return result.affectedRows > 0;
+/** true si el producto ya tiene ventas (aparece en algún pedido). */
+async function hasSales(id) {
+  const d = await col('pedidos').findOne({ 'items.producto_id': id }, { projection: { _id: 1 } });
+  return Boolean(d);
 }
 
-module.exports = { findAll, findById, create, update, remove, addRecipeItem, removeRecipeItem, sellByRecipe, nameExists };
+async function remove(id) {
+  const res = await col('productos').deleteOne({ _id: id });
+  return res.deletedCount > 0;
+}
+
+/** Consulta 10 (INSERT ... SELECT): agrega o actualiza un insumo en la receta (copia nombre y unidad del insumo). */
+async function addRecipeItem(idProducto, idInsumo, cantidad) {
+  const ins = await col('insumos').findOne({ _id: idInsumo });
+  if (!ins) throw new HttpError(400, { field: 'id_insumo', message: 'el insumo indicado no existe' });
+  const upd = await col('productos').updateOne(
+    { _id: idProducto, 'receta.insumo_id': idInsumo },
+    { $set: { 'receta.$.cantidad_requerida': cantidad } }
+  );
+  if (upd.matchedCount === 0) {
+    await col('productos').updateOne({ _id: idProducto }, { $push: { receta: {
+      insumo_id: idInsumo, nombre: ins.nombre, unidad_medida: ins.unidad_medida, cantidad_requerida: cantidad,
+    } } });
+  }
+  await recomputeApto(idProducto);
+  return findById(idProducto);
+}
+
+/** Consulta 11 (DELETE): quita un insumo de la receta. false si no estaba. */
+async function removeRecipeItem(idProducto, idInsumo) {
+  const res = await col('productos').updateOne({ _id: idProducto }, { $pull: { receta: { insumo_id: idInsumo } } });
+  if (res.modifiedCount === 0) return false;
+  await recomputeApto(idProducto);
+  return true;
+}
+
+module.exports = {
+  findAll, findById, findManyWithStock, create, update, remove, hasSales, nameExists,
+  addRecipeItem, removeRecipeItem, recomputeApto, recomputeAptoByInsumo, computeApto, STOCK_STAGES,
+};
+
+/**
+ * Consulta 07 / RF10: descuenta del stock los insumos de la receta por la cantidad vendida (venta manual del admin).
+ * Cada insumo se descuenta solo si le alcanza; si alguno no alcanza, la transacción se revierte completa.
+ * Devuelve la cantidad de insumos descontados (0 si no hay receta).
+ */
+async function sellByRecipe(idProducto, cantidad) {
+  const { withTx } = require('../config/mongo');
+  return withTx(async (session) => {
+    const p = await col('productos').findOne({ _id: idProducto }, { projection: { receta: 1 }, session });
+    if (!p || p.receta.length === 0) return 0;
+    const hechos = [];
+    try {
+      for (const r of p.receta) {
+        const need = r.cantidad_requerida * cantidad;
+        const res = await col('insumos').updateOne(
+          { _id: r.insumo_id, $expr: { $gte: [{ $subtract: ['$stock_actual', { $ifNull: ['$stock_reservado', 0] }] }, need] } },
+          { $inc: { stock_actual: -need } },
+          { session }
+        );
+        if (res.modifiedCount !== 1) throw new HttpError(409, { message: `stock insuficiente de ${r.nombre}: la venta dejaría el inventario bajo cero` });
+        hechos.push([r.insumo_id, need]);
+      }
+    } catch (e) {
+      if (!session) for (const [id, need] of hechos) await col('insumos').updateOne({ _id: id }, { $inc: { stock_actual: need } });
+      throw e;
+    }
+    return p.receta.length;
+  });
+}
+module.exports.sellByRecipe = sellByRecipe;

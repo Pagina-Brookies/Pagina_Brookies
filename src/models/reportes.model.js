@@ -1,28 +1,12 @@
 'use strict';
 
-const db = require('../config/db');
+const { col } = require('../config/mongo');
+const { PIPELINE_MAS_VENDIDOS, PIPELINE_CRITICOS } = require('../queries/mql');
 
-/** Consulta 04 — productos más vendidos (JOIN con detalle_pedido). */
-async function topProducts() {
-  return db.execute(
-    `SELECT p.id_producto, p.nombre, SUM(d.cantidad) AS unidades_vendidas
-     FROM producto p
-     JOIN detalle_pedido d ON d.id_producto = p.id_producto
-     GROUP BY p.id_producto, p.nombre
-     ORDER BY unidades_vendidas DESC, p.nombre ASC`
-  );
-}
+/** Consulta 04: productos más vendidos. */
+const topProducts = () => col('pedidos').aggregate(PIPELINE_MAS_VENDIDOS).toArray();
 
-/** Consulta 05 — insumos en stock crítico y los productos que los usan (JOIN de 3 tablas). */
-async function criticalSupplies() {
-  return db.execute(
-    `SELECT DISTINCT i.nombre AS insumo, i.stock_actual, i.stock_minimo, p.nombre AS producto
-     FROM insumo i
-     JOIN receta r ON r.id_insumo = i.id_insumo
-     JOIN producto p ON p.id_producto = r.id_producto
-     WHERE i.stock_actual <= i.stock_minimo
-     ORDER BY i.nombre, p.nombre`
-  );
-}
+/** Consulta 05: insumos críticos y los productos que los usan. */
+const criticalSupplies = () => col('insumos').aggregate(PIPELINE_CRITICOS).toArray();
 
 module.exports = { topProducts, criticalSupplies };

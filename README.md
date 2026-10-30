@@ -1,204 +1,77 @@
 # Brookies Coffee
 
-Sistema web de pedidos y gestión de inventario para la cafetería Brookies Coffee.
-Proyecto del ramo **ICI-324 Bases de Datos y Programación Web** (Universidad de Valparaíso), **Grupo 20**.
+Sistema web de pedidos con gestión automática de inventario para una cafetería familiar.
+Proyecto del ramo ICI-324 Bases de Datos y Programación Web (Universidad de Valparaíso), Grupo 20.
 
-- **Integrantes:** Felipe Hernández Olivares · Simón Reyes Morales
-- **Profesor:** Benjamín Serrano
-- **Etapa:** 1 (base de datos implementada, conexión desde la aplicación y 13 consultas SQL) · Control 2: traspaso a MongoDB y mockups
-- **Backend desplegado:** https://brookies-coffee-api.onrender.com
-
-## Dónde vive el proyecto (Etapa 1)
-
-- **Backend (API):** desplegado en [Render](https://render.com), plan gratuito, en
-  https://brookies-coffee-api.onrender.com. Se redeploya solo con cada push a `main`.
-- **Base de datos:** MySQL en [Aiven](https://aiven.io), plan gratuito (servicio `brookies-db`).
-  El backend se conecta a ella por SSL (variables `DB_SSL` y `DB_SSL_CA_CONTENT` en Render).
-
-Para comprobar que está arriba, desde cualquier computador (no hace falta el nuestro):
-- https://brookies-coffee-api.onrender.com/health → estado de la app y de la base
-- https://brookies-coffee-api.onrender.com/api/v1/products → menú con filtros
-- https://brookies-coffee-api.onrender.com/api-docs → documentación interactiva (Swagger)
-
-> **Nota:** el plan gratuito de Render "duerme" el servicio después de 15 minutos sin tráfico.
-> La primera petición después de eso puede demorar hasta un minuto en responder mientras despierta;
-> no es un error. Conviene abrir `/health` un par de minutos antes de mostrarlo en vivo.
+- Backend: Node.js, Express y MongoDB (driver oficial).
+- Frontend: página estática (HTML, CSS y JavaScript sin frameworks) que sirve el mismo Express.
+- Documentación de la API: `/api-docs` (Swagger UI) y `/api-docs.json`.
+- Entrega 1 (MySQL) conservada en `docs/etapa1-sql/`: consultas SQL, migraciones y resultados. No se ejecuta.
 
 ## Qué hace
 
-El cliente consulta el menú, arma su pedido y paga en línea. El administrador gestiona insumos, recetas y menú.
-Cuando se confirma una venta, el sistema descuenta los insumos según la receta de cada producto y avisa
-cuando el stock de un insumo llega a su nivel crítico. Más detalle en el informe (`docs/`).
+Clientes: ver el menú con filtros (categoría, alérgenos, preparación, orden), armar el carrito, reservar el stock por 10 minutos, pagar con tarjeta (pasarela simulada), seguir el estado del pedido y ver su historial.
+Administrador: cambiar el estado de los pedidos, gestionar insumos (alta, edición, reabastecimiento, alerta de stock crítico), menú y recetas, y ver reportes con el texto de las 13 consultas en MongoDB.
 
-## Tecnologías
+Cuando se paga un pedido, el sistema descuenta de cada insumo la cantidad de su receta. Un producto deja de estar disponible solo si le falta stock de algún insumo.
 
-Node.js 18 o superior · Express · MySQL 8.0.16 o superior · `mysql2` (SQL parametrizado, sin ORM)
+## Cómo ejecutarlo
 
-## Cómo correrlo en tu computador
-
-1. Instala las dependencias:
-   ```bash
-   npm install
-   ```
-2. Crea una base de datos MySQL vacía (por ejemplo `brookies`) y un usuario con permisos sobre ella.
-3. Copia `.env.example` como `.env` y completa los valores (host, usuario, clave y nombre de la base).
-   El `.gitignore` excluye `.env` y `*.pem`, pero `.env` y `ca.pem` se subieron en la Etapa 1, antes de crear
-   esa regla, y siguen versionados. Pendiente: sacarlos del repositorio (`git rm --cached .env ca.pem`) y
-   cambiar la contraseña de Aiven, porque sigue en el historial de git.
-4. Crea las tablas y carga los datos de prueba:
-   ```bash
-   npm run db:reset
-   ```
-   Este comando **borra y vuelve a crear** las tablas del proyecto: úsalo solo en una base de desarrollo.
-5. Levanta el servidor:
-   ```bash
-   npm start
-   ```
-   Comprueba que responde en `http://localhost:3000/health`.
-
-Los usuarios de prueba (`admin@brookies.example`, `camila.rojas@example.com`, …) tienen la contraseña `demo1234`,
-guardada como hash. Son datos ficticios.
-
-## Las 13 consultas SQL
-
-Están en `queries/`, una por archivo, y se ejecutan desde la aplicación con:
+Requisitos: Node 20 o superior y una base MongoDB. Para que funcionen las transacciones hace falta un replica set (MongoDB Atlas, incluido el plan gratis, lo es).
 
 ```bash
-npm run db:reset      # deja la base con los datos de prueba originales
-npm run queries       # ejecuta las 13 y muestra los resultados
-npm run queries:md    # además escribe docs/resultados_consultas.md
+npm install
 ```
 
-| N° | Tipo | Qué hace |
-|---|---|---|
-| 01 | ALTER | Agrega un índice sobre `producto.categoria` |
-| 02 | ALTER | Agrega `fecha_respaldo` a la tabla de respaldo temporal |
-| 03 | SELECT | Consulta de productos con filtros (categoría, disponibilidad, tipo de preparación) |
-| 04 | SELECT (JOIN) | Productos más vendidos |
-| 05 | SELECT (JOIN de 3 tablas) | Insumos en stock crítico y productos que los usan |
-| 06 | UPDATE | Reabastecer el stock de un insumo |
-| 07 | UPDATE (JOIN) | Descontar insumos según la receta de un producto |
-| 08 | INSERT | Registrar un insumo |
-| 09 | INSERT | Agregar un producto al menú |
-| 10 | INSERT … SELECT | Agregar un insumo a la receta de un producto |
-| 11 | DELETE | Quitar un insumo de una receta |
-| 12 | DELETE | Eliminar un pedido de prueba (CASCADE a detalle y pago) |
-| 13 | DROP | Eliminar la tabla de respaldo temporal |
+Crear un archivo `.env` (no se sube a Git) con:
 
-Las consultas SELECT (03, 04 y 05) están en álgebra relacional en `docs/algebra_relacional.md`.
+```
+MONGODB_URI=<cadena de conexión>
+MONGODB_DB=brookies
+JWT_SECRET=<texto aleatorio de al menos 16 caracteres>
+```
 
-## API
-
-Documentación interactiva (Swagger / OpenAPI): https://brookies-coffee-api.onrender.com/api-docs
-— se puede probar cada endpoint desde el navegador, con el botón "Try it out". El JSON crudo del
-spec está en https://brookies-coffee-api.onrender.com/api-docs.json
-
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/health` | Estado de la aplicación y de la base de datos |
-| GET | `/api/v1/products` | Consulta de productos con filtros (RF04) |
-| GET | `/api/v1/products/:id` | Un producto con su receta |
-| POST | `/api/v1/products` | Agregar un producto al menú (RF15) |
-| PUT | `/api/v1/products/:id` | Editar un producto (RF15) |
-| DELETE | `/api/v1/products/:id` | Eliminar un producto (RF15); bloqueado (409) si ya tiene ventas registradas |
-| POST | `/api/v1/products/:id/recipe` | Agregar o actualizar un insumo en la receta (RF12) |
-| DELETE | `/api/v1/products/:id/recipe/:idInsumo` | Quitar un insumo de la receta (RF12) |
-| POST | `/api/v1/products/:id/sell` | Descontar insumos según receta al vender (RF10) |
-| GET | `/api/v1/supplies?critical=true` | Inventario de insumos (RF11); solo críticos con `critical=true` (RF13) |
-| GET | `/api/v1/supplies/:id` | Un insumo |
-| POST | `/api/v1/supplies` | Registrar un insumo (RF11) |
-| PUT | `/api/v1/supplies/:id` | Editar un insumo (RF11) |
-| DELETE | `/api/v1/supplies/:id` | Eliminar un insumo (RF11); bloqueado (409) si está en alguna receta |
-| PATCH | `/api/v1/supplies/:id/restock` | Reabastecer stock (RF14) |
-| GET | `/api/v1/reports/top-products` | Productos más vendidos (RF16, consulta 04) |
-| GET | `/api/v1/reports/critical-supplies` | Insumos críticos y sus productos (RF16, consulta 05) |
-
-Filtros de `GET /api/v1/products`: `category` (por defecto `todas`), `available` (por defecto `true`, considera el stock de
-la receta), `name`, `suitable_for` (`sin_gluten`, `sin_lactosa`, `vegano`), `preparation` (`caliente`, `frio`) y
-`sort` (`precio`, `mas_vendido`).
-
-Ejemplo: `GET /api/v1/products?category=Galleta&suitable_for=vegano&sort=precio`
-
-Cada producto trae además `apto_para` (por ejemplo `["sin_gluten", "vegano"]`), calculado desde los insumos de su receta.
-
-Todas las respuestas tienen la misma forma: `{ "data": ..., "errors": [] }`. Códigos que usa la API:
-
-| Código | Cuándo |
-|---|---|
-| 400 | Datos inválidos: negativos, texto en campos numéricos, valores fuera de lista, más de 2 decimales, JSON mal escrito |
-| 404 | El recurso no existe |
-| 409 | Nombre repetido, o borrar algo que está en uso (insumo en una receta, producto con ventas) |
-| 413 | Cuerpo de la petición demasiado grande |
-| 422 | Regla de negocio: vender sin stock suficiente, vender un producto no disponible o sin receta, desbordar el stock |
-| 503 | La base de datos no está disponible (por ejemplo, Aiven apagado por inactividad) |
-| 500 | Error inesperado; el detalle queda en el registro del servidor |
-
-### Validación de entradas
-
-Todos los endpoints de escritura (`POST`, `PUT`, `PATCH`, `DELETE`) validan cada campo antes de tocar la base de datos:
-números negativos, texto donde va un número, más de 2 decimales, booleanos mal tipados (`"true"` en vez de `true`),
-valores fuera de una lista fija, campos faltantes y textos vacíos o demasiado largos se rechazan con 400 y un detalle
-por campo. Listas fijas: categoría (`Café`, `Té`, `Galleta`), tipo de preparación (`caliente`, `frio`, `no_aplica`) y
-unidad de medida (`g`, `kg`, `ml`, `l`, `unidad`); se aceptan sin importar mayúsculas ni tildes (`cafe` se guarda como
-`Café`). Los nombres de productos e insumos no pueden repetirse.
-
-Dos formas de probarlo:
+Opcionales: `PORT` (3000), `JWT_EXPIRES_IN` (8h), `RATE_LIMIT` (300 por 15 min), `AUTH_RATE_LIMIT` (20 por 15 min), `RESERVA_MINUTOS` (10), `MONGO_TX=off` para un MongoDB sin replica set, y `LOCAL_DIRECCION`, `LOCAL_TELEFONO`, `LOCAL_CORREO`, `LOCAL_HORARIO_SEMANA`, `LOCAL_HORARIO_FINDE` para la pantalla del local.
 
 ```bash
-npm test            # pruebas unitarias de cada validador
-npm run test:api    # recorre la API con ~87 casos válidos e inválidos (requiere el servidor corriendo)
-API_URL=https://brookies-coffee-api.onrender.com npm run test:api   # lo mismo, contra producción
+npm run db:seed     # borra y carga los datos de demostración
+npm start           # http://localhost:3000
+npm run queries     # ejecuta las 13 consultas en orden sobre una base de prueba
+npm test            # pruebas (las de integración necesitan MONGODB_URI)
 ```
 
-`test:api` borra al final todo lo que crea para probar; no vende ni reabastece con éxito, así que no cambia el stock.
+Cuentas de demostración (contraseña `demo1234`): `admin@brookies.example` (administrador) y `camila.rojas@example.com` (cliente).
 
-La consulta 07 (descontar insumos según receta) se ejecuta como una sola sentencia `UPDATE ... JOIN`: si la venta
-dejaría algún insumo bajo cero, la restricción `CHECK` de la base de datos rechaza el `UPDATE` completo — ningún
-insumo queda descontado a medias — y la API traduce ese error en un 422 legible (`src/utils/sqlErrors.js`).
+## Despliegue en Render
 
-## Estructura del proyecto
+1. Crear un clúster gratuito en MongoDB Atlas y un usuario de base de datos. En Network Access permitir la IP de Render (o 0.0.0.0/0 mientras se prueba).
+2. En Render crear un Web Service desde este repositorio. Build: `npm install`. Start: `npm start`.
+3. Definir las variables `MONGODB_URI`, `MONGODB_DB` y `JWT_SECRET` en Environment. Nunca se escriben en el código.
+4. Cargar los datos una vez, desde el computador: `npm run db:seed` con `MONGODB_URI` apuntando a Atlas.
+
+## Estructura
 
 ```
-migrations/     esquema (001) y datos de prueba (002)
-queries/        las 13 consultas SQL y su manifiesto de parámetros
-src/
-  config/       conexión a la base de datos (lee variables de entorno)
-  docs/         spec de OpenAPI para Swagger UI (swagger.js)
-  routes/       mapa de la API, con las anotaciones @swagger de cada endpoint
-  controllers/  leen la petición, llaman al modelo y eligen la respuesta
-  models/       consultas SQL parametrizadas
-  middleware/   errores y rutas no encontradas
-  utils/        validación, formato de respuestas y traducción de errores de MySQL (sqlErrors.js)
-  views/        vacía por ahora (Etapa 2)
-scripts/        migrar la base, ejecutar las consultas, exportar a RelaX, probar la API (api_check.js)
-tests/          pruebas unitarias (npm test)
-docs/           informe, diagramas, diccionario, álgebra relacional y resultados
+server.js                 arranque (conexión, índices, liberación de reservas vencidas)
+src/app.js                Express, helmet, límites, estáticos
+src/routes/               rutas y permisos por rol
+src/controllers/          validan la entrada y llaman a los modelos
+src/models/               acceso a MongoDB (usuario, producto, insumo, pedido, reportes)
+src/queries/mql.js        las 13 consultas en MQL
+src/middleware/           JWT, roles, límite de peticiones, errores
+src/services/pasarela.js  pasarela de pago simulada
+src/docs/openapi.js       especificación OpenAPI
+public/                   frontend
+data/seed.json            datos de demostración
+scripts/                  seed.js y queries.js
+tests/                    validadores e integración
+docs/                     informe, mockups, MongoDB y entrega 1
 ```
 
-## Despliegue (Render + Aiven)
+## Formato de respuesta
 
-1. **Base de datos:** crea un servicio MySQL en Aiven y anota host, puerto, usuario, clave y nombre de la base.
-   Descarga su certificado CA.
-2. **Cargar las tablas:** con las credenciales de Aiven en tu `.env` local (`DB_SSL=true` y `DB_SSL_CA` con la ruta al `.pem`),
-   ejecuta `npm run db:reset`.
-3. **Backend:** en Render crea un *Web Service* desde este repositorio con
-   *Build Command* `npm install` y *Start Command* `npm start`.
-4. **Variables de entorno en Render:** `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL=true` y
-   `DB_SSL_CA_CONTENT` (el contenido del certificado). Render define `PORT` automáticamente.
-5. Comprueba `https://<tu-servicio>.onrender.com/health`.
+Toda respuesta tiene la forma `{ "data": ..., "errors": [] }`. En un error, `data` es `null` y `errors` trae objetos `{ "field", "message" }` o un texto. Códigos usados: 200, 201, 400, 401, 403, 404, 409, 413, 422, 429, 503 y 500.
 
-Los planes gratuitos pueden dormir el servicio o apagar la base por inactividad: despiértalos antes de una demostración.
+## Seguridad
 
-## Documentación (`docs/`)
-
-- `Grupo20-BrookiesCoffee-DefinicionProyecto.pdf`: informe de definición del proyecto (versión corregida)
-- `modelo_er.png`, `modelo_relacional.png`, `diagrama_casos_uso.png`
-- `diccionario_datos.md`
-- `algebra_relacional.md` y `algebra_relacional/brookies.relax.txt` (grupo de datos para RelaX)
-- `resultados_consultas.md`: resultado de ejecutar las 13 consultas
-- `decisiones_tecnicas.md`
-- `mockups/`: pantallas del sitio (01 a 28 sin la 16; incluye `17_flujo_navegacion.png` y `18_guia_estilo.png`)
-- `nosql/traspaso.md`: traspaso del modelo relacional a MongoDB (Control 2)
-- `nosql/json/`: documentos JSON de ejemplo, uno por colección
-- `nosql/pruebas.mongosh.js`: prueba las consultas MQL en una base temporal
-  (`mongosh "<cadena de conexión>" --file docs/nosql/pruebas.mongosh.js`)
+Contraseñas con bcrypt, sesión con JWT de 8 horas, permisos por rol en cada ruta, validación de todos los datos de entrada, consultas con valores parametrizados (nada del usuario se concatena), límite de peticiones, cabeceras de seguridad con helmet y política de contenido estricta. El número de tarjeta se usa solo para decidir el resultado del pago y nunca se guarda.

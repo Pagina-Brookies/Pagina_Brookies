@@ -51,9 +51,9 @@ Coincide con `migrations/001_schema.sql`. En MySQL los nombres de las tablas van
 | unidad_medida | — | VARCHAR(20) | NOT NULL | — | Solo g, kg, ml, l o unidad (validado en la aplicación) |
 | stock_actual | — | DECIMAL(10,2) | NOT NULL | 0 | CHECK (stock_actual >= 0) |
 | stock_minimo | — | DECIMAL(10,2) | NOT NULL | — | CHECK (stock_minimo >= 0) |
-| contiene_gluten | — | BOOLEAN | NOT NULL | FALSE | Base del filtro «sin gluten» |
-| contiene_lactosa | — | BOOLEAN | NOT NULL | FALSE | Base del filtro «sin lactosa» |
-| es_origen_animal | — | BOOLEAN | NOT NULL | FALSE | Base del filtro «vegano» |
+| contiene_gluten | — | BOOLEAN | NOT NULL | FALSE | Base del filtro "sin gluten" |
+| contiene_lactosa | — | BOOLEAN | NOT NULL | FALSE | Base del filtro "sin lactosa" |
+| es_origen_animal | — | BOOLEAN | NOT NULL | FALSE | Base del filtro "vegano" |
 
 ## RECETA
 

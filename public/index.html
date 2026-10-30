@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brookies Coffee</title>
+  <meta name="description" content="Pide tu café y tus galletas en Brookies Coffee.">
+  <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <header class="topbar">
+    <a class="brand" href="#/" aria-label="Brookies Coffee, ir al menú">
+      <img src="img/logo.svg" alt="" width="36" height="36">
+      <span>Brookies Coffee</span>
+    </a>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="nav">Menú de navegación</button>
+    <nav id="nav" class="nav" aria-label="Principal"></nav>
+  </header>
+  <main id="main" tabindex="-1"></main>
+  <footer class="footer">
+    <p>Brookies Coffee. Proyecto de ICI-324, Universidad de Valparaíso.</p>
+    <p><a href="/api-docs">Documentación de la API</a></p>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
