@@ -400,7 +400,7 @@ export async function local(root) {
     const q = encodeURIComponent(l.mapa.consulta);
     const mapa = h('section', { class: 'panel mapa', 'aria-labelledby': 'mapa-h' },
       h('h2', { id: 'mapa-h' }, 'Cómo llegar'),
-      l.mapa.referencial ? alerta('info', 'El local todavía no abre.', `El mapa muestra dónde estará: ${l.direccion.charAt(0).toLowerCase()}${l.direccion.slice(1)}.`) : null,
+      l.mapa.referencial ? alerta('info', 'El local se encontrará por esta zona.', '') : null,
       h('iframe', { class: 'mapa-frame', title: `Mapa: ${l.mapa.consulta}`, src: `https://www.google.com/maps?q=${q}&z=16&output=embed`, loading: 'lazy', referrerpolicy: 'no-referrer-when-downgrade' }),
       h('p', {}, h('a', { href: `https://www.google.com/maps/search/?api=1&query=${q}`, target: '_blank', rel: 'noopener' }, 'Abrir en Google Maps'), h('span', { class: 'sr-only' }, ' (se abre en otra pestaña)')));
     root.replaceChildren(h('h1', {}, 'El local'),
