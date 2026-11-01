@@ -408,7 +408,8 @@ export async function local(root) {
         h('div', { class: 'local-info' },
           h('div', { class: 'panel' }, h('h2', {}, l.mapa.referencial ? 'Dónde estaremos' : 'Dónde estamos'), h('p', {}, l.direccion)),
           h('div', { class: 'panel' }, h('h2', {}, 'Horarios'), h('ul', {}, l.horarios.map((x) => h('li', {}, h('strong', {}, `${x.dias}: `), x.horario)))),
-          h('div', { class: 'panel' }, h('h2', {}, 'Contacto y ayuda'), h('p', {}, 'Teléfono: ', h('a', { href: `tel:${l.telefono.replace(/\s/g, '')}` }, l.telefono)), h('p', {}, 'Correo: ', h('a', { href: `mailto:${l.correo_contacto}` }, l.correo_contacto)))),
+          h('div', { class: 'panel' }, h('h2', {}, 'Contacto y ayuda'), h('p', {}, 'Teléfono: ', h('a', { href: `tel:${l.telefono.replace(/\s/g, '')}` }, l.telefono)), h('p', {}, 'Correo: ', h('a', { href: `mailto:${l.correo_contacto}` }, l.correo_contacto)),
+            h('p', {}, 'Instagram: ', h('a', { href: `https://www.instagram.com/${l.instagram}/`, target: '_blank', rel: 'noopener noreferrer' }, `@${l.instagram}`)))),
         mapa));
   } catch (e) { root.append(alerta('error', 'No pudimos cargar los datos del local.', e.message)); }
 }
