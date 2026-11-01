@@ -20,6 +20,8 @@ const RUTAS = [
   [/^\/perfil$/, (r) => C.perfil(r), 'Mi perfil', 'sesion'],
   [/^\/ingresar$/, (r, n) => C.ingresar(r, n), 'Ingresar', null],
   [/^\/registro$/, (r, n) => C.registro(r, n), 'Crear cuenta', null],
+  [/^\/recuperar$/, (r) => C.recuperar(r), 'Recuperar contraseña', null],
+  [/^\/restablecer$/, (r, n, m, q) => C.restablecer(r, n, m, q), 'Crear contraseña nueva', null],
   [/^\/local$/, (r) => C.local(r), 'El local', null],
   [/^\/admin\/pedidos$/, (r, n) => A.adminPedidos(r, n), 'Administración: pedidos', 'admin'],
   [/^\/admin\/insumos$/, (r) => A.adminInsumos(r), 'Administración: insumos', 'admin'],
@@ -55,7 +57,6 @@ function render() {
   const query = new URLSearchParams(qs || '');
   const hit = RUTAS.map((r) => [r, r[0].exec(ruta)]).find(([, m]) => m);
   root.replaceChildren();
-  root.classList.toggle('full', ruta === '/'); // el menú usa todo el ancho de la pantalla
   navEl.classList.remove('open');
   document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
   pintarNav();

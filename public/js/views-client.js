@@ -164,13 +164,16 @@ export function carrito(root, nav) {
   const av = aviso();
   const btn = h('button', { type: 'button', class: 'btn' }, 'Reservar y pagar');
   btn.addEventListener('click', () => abrirPago(nav, btn, av));
-  root.append(h('div', { class: 'table-wrap' }, h('table', {}, h('caption', {}, 'Productos del pedido'),
-    h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Producto'), h('th', { scope: 'col', class: 'num' }, 'Cantidad'), h('th', { scope: 'col', class: 'num' }, 'Subtotal'), h('th', { scope: 'col' }, 'Acciones'))),
-    h('tbody', {}, c.map((l) => h('tr', {}, h('td', {}, l.nombre), h('td', { class: 'num' }, l.cantidad), h('td', { class: 'num' }, clp(l.precio * l.cantidad)),
-      h('td', {}, h('button', { type: 'button', class: 'btn danger small', onclick: () => { quitar(l.id); nav.recargar(); } }, `Quitar ${l.nombre}`))))))),
-  h('div', { class: 'total' }, h('span', {}, 'Total'), h('span', {}, clp(totalCarrito()))),
-  h('p', { class: 'muted' }, 'Al reservar, guardamos tu stock por 10 minutos mientras pagas.'),
-  av, h('p', {}, btn, ' ', h('a', { class: 'btn secondary', href: '#/' }, 'Seguir comprando')));
+  // productos a la izquierda y el resumen con el total y los botones al costado, como en el menú
+  root.append(h('div', { class: 'layout' },
+    h('div', { class: 'table-wrap' }, h('table', {}, h('caption', {}, 'Productos del pedido'),
+      h('thead', {}, h('tr', {}, h('th', { scope: 'col' }, 'Producto'), h('th', { scope: 'col', class: 'num' }, 'Cantidad'), h('th', { scope: 'col', class: 'num' }, 'Subtotal'), h('th', { scope: 'col' }, 'Acciones'))),
+      h('tbody', {}, c.map((l) => h('tr', {}, h('td', {}, l.nombre), h('td', { class: 'num' }, l.cantidad), h('td', { class: 'num' }, clp(l.precio * l.cantidad)),
+        h('td', {}, h('button', { type: 'button', class: 'btn danger small', onclick: () => { quitar(l.id); nav.recargar(); } }, `Quitar ${l.nombre}`))))))),
+    h('div', { class: 'resumen' },
+      h('div', { class: 'total' }, h('span', {}, 'Total'), h('span', {}, clp(totalCarrito()))),
+      h('p', { class: 'muted' }, 'Al reservar, guardamos tu stock por 10 minutos mientras pagas.'),
+      av, h('p', {}, btn, ' ', h('a', { class: 'btn secondary', href: '#/' }, 'Seguir comprando')))));
 }
 
 /**
@@ -271,15 +274,18 @@ export async function pedido(root, nav, id, query) {
     try {
       const p = await get(`/api/v1/orders/${id}`);
       cuerpo.replaceChildren(
-        query.get('nuevo') ? alerta('success', 'Pago aprobado.', 'Recibimos tu pedido y ya lo estamos preparando.') : null,
+        query.get('nuevo') ? alerta('success', 'Pago aprobado.', 'Recibimos tu pedido y ya lo estamos preparando.') : '', // replaceChildren escribiría "null" como texto
         pasos(p.estado),
-        h('p', {}, 'Estado: ', estadoTag(p.estado), '  ', h('span', { class: 'muted' }, fecha(p.fecha))),
-        h('div', { class: 'table-wrap' }, h('table', {}, h('caption', {}, 'Detalle'),
-          h('thead', {}, h('tr', {}, ['Producto', 'Cantidad', 'Precio', 'Subtotal'].map((t, k) => h('th', { scope: 'col', class: k ? 'num' : '' }, t)))),
-          h('tbody', {}, p.items.map((i) => h('tr', {}, h('td', {}, i.nombre), h('td', { class: 'num' }, i.cantidad), h('td', { class: 'num' }, clp(i.precio_unitario)), h('td', { class: 'num' }, clp(i.subtotal))))))),
-        h('div', { class: 'total' }, h('span', {}, 'Total'), h('span', {}, clp(p.total))),
-        p.pago ? h('p', { class: 'muted' }, `Pago ${p.pago.estado_pago} con ${p.pago.metodo_pago}.`) : null,
-        h('p', {}, h('a', { class: 'btn secondary', href: '#/pedidos' }, 'Ver mis pedidos')));
+        // productos a un lado; estado, total y pago al otro
+        h('div', { class: 'layout' },
+          h('div', { class: 'table-wrap' }, h('table', {}, h('caption', {}, 'Detalle'),
+            h('thead', {}, h('tr', {}, ['Producto', 'Cantidad', 'Precio', 'Subtotal'].map((t, k) => h('th', { scope: 'col', class: k ? 'num' : '' }, t)))),
+            h('tbody', {}, p.items.map((i) => h('tr', {}, h('td', {}, i.nombre), h('td', { class: 'num' }, i.cantidad), h('td', { class: 'num' }, clp(i.precio_unitario)), h('td', { class: 'num' }, clp(i.subtotal))))))),
+          h('div', { class: 'resumen' },
+            h('p', {}, 'Estado: ', estadoTag(p.estado), '  ', h('span', { class: 'muted' }, fecha(p.fecha))),
+            h('div', { class: 'total' }, h('span', {}, 'Total'), h('span', {}, clp(p.total))),
+            p.pago ? h('p', { class: 'muted' }, `Pago ${p.pago.estado_pago} con ${p.pago.metodo_pago}.`) : null,
+            h('p', {}, h('a', { class: 'btn secondary', href: '#/pedidos' }, 'Ver mis pedidos')))));
       return p.estado;
     } catch (e) {
       cuerpo.replaceChildren(alerta('error', 'No pudimos cargar el pedido.', e.message));
@@ -300,8 +306,8 @@ export async function pedidos(root) {
     const data = await get('/api/v1/orders/mine');
     root.replaceChildren(h('h1', {}, 'Mis pedidos'), data.length ? h('div', { class: 'table-wrap' }, h('table', {}, h('caption', {}, 'Historial de pedidos'),
       h('thead', {}, h('tr', {}, ['N°', 'Fecha', 'Productos', 'Total', 'Estado', ''].map((t, k) => h('th', { scope: 'col', class: k === 3 ? 'num' : '' }, t)))),
-      h('tbody', {}, data.map((p) => h('tr', {}, h('td', {}, p.id_pedido), h('td', {}, fecha(p.fecha)),
-        h('td', {}, p.items.map((i) => `${i.cantidad} × ${i.nombre}`).join(', ')), h('td', { class: 'num' }, clp(p.total)), h('td', {}, estadoTag(p.estado)),
+      h('tbody', {}, data.map((p) => h('tr', {}, h('td', {}, p.id_pedido), h('td', { class: 'nowrap' }, fecha(p.fecha)),
+        h('td', { class: 'col-productos' }, p.items.map((i) => `${i.cantidad} × ${i.nombre}`).join(', ')), h('td', { class: 'num' }, clp(p.total)), h('td', {}, estadoTag(p.estado)),
         h('td', {}, h('a', { href: `#/pedido/${p.id_pedido}`, 'aria-label': `Ver pedido ${p.id_pedido}` }, 'Ver'))))))) : vacio('Todavía no has hecho pedidos.'));
   } catch (e) { root.append(alerta('error', 'No pudimos cargar tus pedidos.', e.message)); }
 }
@@ -333,14 +339,58 @@ export function ingresar(root, nav) {
     campo({ id: 'correo', label: 'Correo', type: 'email', required: true, autocomplete: 'username' }),
     campo({ id: 'contrasena', label: 'Contraseña', type: 'password', required: true, autocomplete: 'current-password' }), av);
   const btn = h('button', { type: 'submit', class: 'btn' }, 'Ingresar');
-  form.append(h('p', {}, btn), h('p', { class: 'muted' }, '¿No tienes cuenta? ', h('a', { href: '#/registro' }, 'Crear una cuenta')));
+  form.append(h('p', {}, btn), h('p', {}, h('a', { href: '#/recuperar' }, '¿Olvidaste tu contraseña?')),
+    h('p', { class: 'muted' }, '¿No tienes cuenta? ', h('a', { href: '#/registro' }, 'Crear una cuenta')));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     ocupado(btn, 'Ingresando…', async () => {
       try { entrar(await post('/api/v1/auth/login', { correo: form.correo.value, contrasena: form.contrasena.value }), nav); } catch (err) { mostrarErrores(form, err, av); }
     });
   });
-  root.append(h('h1', {}, 'Ingresar'), form);
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Ingresar'), form));
+}
+
+/** Pide el link para crear una contraseña nueva. El mensaje es el mismo exista o no la cuenta. */
+export function recuperar(root) {
+  const av = aviso();
+  const form = h('form', { class: 'form', novalidate: true },
+    h('p', {}, 'Escribe el correo de tu cuenta y te enviaremos un link para crear una contraseña nueva.'),
+    campo({ id: 'correo', label: 'Correo', type: 'email', required: true, autocomplete: 'email' }), av);
+  const btn = h('button', { type: 'submit', class: 'btn' }, 'Enviar link');
+  form.append(h('p', {}, btn), h('p', { class: 'muted' }, h('a', { href: '#/ingresar' }, 'Volver a ingresar')));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ocupado(btn, 'Enviando…', async () => {
+      try {
+        await post('/api/v1/auth/forgot-password', { correo: form.correo.value });
+        av.replaceChildren(alerta('success', 'Revisa tu correo.', 'Si el correo tiene una cuenta, te enviamos un link que vale por 30 minutos. Revisa también la carpeta de spam.'));
+      } catch (err) { mostrarErrores(form, err, av); }
+    });
+  });
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Recuperar contraseña'), form));
+}
+
+/** Crea la contraseña nueva con el token que llega en el link del correo. */
+export function restablecer(root, nav, m, query) {
+  const token = query.get('token') || '';
+  const av = aviso();
+  const pw = campo({ id: 'contrasena', label: 'Contraseña nueva', type: 'password', required: true, autocomplete: 'new-password', hint: 'Debe cumplir estas reglas:' });
+  const form = h('form', { class: 'form', novalidate: true }, pw, av);
+  pw.append(reglasPassword(pw.querySelector('input')));
+  pw.querySelector('input').setAttribute('aria-describedby', 'contrasena-hint pw-reglas');
+  const btn = h('button', { type: 'submit', class: 'btn' }, 'Guardar contraseña');
+  form.append(h('p', {}, btn));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ocupado(btn, 'Guardando…', async () => {
+      try {
+        await post('/api/v1/auth/reset-password', { token, contrasena: form.contrasena.value });
+        form.replaceChildren(alerta('success', 'Contraseña actualizada.', 'Ya puedes ingresar con tu contraseña nueva.'), h('p', {}, h('a', { class: 'btn', href: '#/ingresar' }, 'Ingresar')));
+      } catch (err) { mostrarErrores(form, err, av); }
+    });
+  });
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Crear contraseña nueva'),
+    token ? form : alerta('error', 'El link no es válido.', 'Pide uno nuevo desde "¿Olvidaste tu contraseña?".')));
 }
 
 export function registro(root, nav) {
@@ -363,7 +413,7 @@ export function registro(root, nav) {
       } catch (err) { mostrarErrores(form, err, av); }
     });
   });
-  root.append(h('h1', {}, 'Crear cuenta'), form);
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Crear cuenta'), form));
 }
 
 export async function perfil(root) {

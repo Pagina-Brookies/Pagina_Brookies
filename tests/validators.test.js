@@ -42,3 +42,15 @@ test('parseId solo acepta enteros positivos', () => {
 test('escapeLike neutraliza % y _ ingresados por el usuario', () => {
   assert.equal(escapeLike('100%_ok'), '100\\%\\_ok');
 });
+
+test('recuperar contraseña: valida el correo, el token del link y la contraseña nueva', () => {
+  const { validateForgot, validateReset } = require('../src/utils/validators');
+  assert.deepEqual(validateForgot({ correo: ' Ana@Correo.CL ' }), { errors: [], data: { correo: 'ana@correo.cl' } });
+  assert.equal(validateForgot({ correo: 'no-es-correo' }).errors[0].field, 'correo');
+  const token = 'a'.repeat(64);
+  assert.deepEqual(validateReset({ token, contrasena: 'nueva1234' }).errors, []);
+  assert.deepEqual(validateReset({ token: 'corto', contrasena: 'nueva1234' }).errors.map((e) => e.field), ['token']);
+  assert.deepEqual(validateReset({ token: 'A'.repeat(64), contrasena: 'nueva1234' }).errors.map((e) => e.field), ['token']);
+  assert.deepEqual(validateReset({ token, contrasena: 'sinnumero' }).errors.map((e) => e.field), ['contrasena']);
+  assert.deepEqual(validateReset({}).errors.map((e) => e.field), ['token', 'contrasena']);
+});

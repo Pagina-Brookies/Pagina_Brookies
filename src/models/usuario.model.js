@@ -57,4 +57,18 @@ async function updateProfile(id, { nombre, telefono, direccion }) {
   return res;
 }
 
-module.exports = { toPublic, findById, findByEmail, createClient, touchLogin, updateProfile };
+/** Recuperación de contraseña: se guarda solo el hash del token, nunca el token del link. */
+const setReset = (id, token_hash, expira_en) => col('usuarios').updateOne({ _id: id }, { $set: { recuperacion: { token_hash, expira_en } } });
+
+const findByResetHash = (token_hash) => col('usuarios').findOne({ 'recuperacion.token_hash': token_hash, 'recuperacion.expira_en': { $gt: new Date() }, activo: true });
+
+/**
+ * Cambia la contraseña y borra el token en la misma operación: el link sirve una sola vez.
+ * contrasena_cambiada deja sin efecto las sesiones abiertas antes del cambio (ver requireAuth).
+ */
+const resetPassword = (id, token_hash, contrasena_hash) => col('usuarios').updateOne(
+  { _id: id, 'recuperacion.token_hash': token_hash },
+  { $set: { contrasena_hash, contrasena_cambiada: new Date() }, $unset: { recuperacion: '' } },
+);
+
+module.exports = { toPublic, findById, findByEmail, createClient, touchLogin, updateProfile, setReset, findByResetHash, resetPassword };

@@ -68,6 +68,48 @@ test('login correcto, incorrecto y registro duplicado', { skip }, async () => {
   assert.strictEqual(nuevo.status, 201);
 });
 
+test('recuperar contraseña: link de un solo uso y la clave nueva sirve para ingresar', { skip }, async () => {
+  const mailer = require('../src/services/correo');
+  const original = mailer.enviarRecuperacion;
+  const enviados = [];
+  mailer.enviarRecuperacion = async (m) => { enviados.push(m); }; // no se envían correos en las pruebas
+  try {
+    const correo = 'olvido@clientes.brookies.example';
+    const registro = await call('POST', '/api/v1/auth/register', { body: { nombre: 'Olvido', correo, contrasena: 'antigua123' } });
+    assert.strictEqual(registro.status, 201);
+    const sesionVieja = registro.body.data.token;
+    assert.strictEqual((await call('GET', '/api/v1/users/me', { token: sesionVieja })).status, 200);
+    await new Promise((r) => setTimeout(r, 1100)); // el token guarda la hora en segundos: el cambio debe caer en un segundo posterior
+    // misma respuesta exista o no la cuenta, y solo se envía correo a la que existe
+    const noExiste = await call('POST', '/api/v1/auth/forgot-password', { body: { correo: 'nadie@clientes.brookies.example' } });
+    const existe = await call('POST', '/api/v1/auth/forgot-password', { body: { correo: 'OLVIDO@clientes.brookies.example' } });
+    assert.strictEqual(noExiste.status, 200);
+    assert.deepStrictEqual(existe.body, noExiste.body);
+    assert.strictEqual(enviados.length, 1);
+    const { token } = enviados[0];
+    // en la base queda el hash, no el token del link
+    const u = await M.col('usuarios').findOne({ correo });
+    assert.notStrictEqual(u.recuperacion.token_hash, token);
+
+    assert.strictEqual((await call('POST', '/api/v1/auth/reset-password', { body: { token, contrasena: 'sinnumero' } })).status, 400);
+    assert.strictEqual((await call('POST', '/api/v1/auth/reset-password', { body: { token, contrasena: 'nueva1234' } })).status, 200);
+    assert.strictEqual((await call('POST', '/api/v1/auth/reset-password', { body: { token, contrasena: 'otra12345' } })).status, 400); // ya se usó
+    assert.strictEqual((await call('POST', '/api/v1/auth/login', { body: { correo, contrasena: 'antigua123' } })).status, 401);
+    const nueva = await call('POST', '/api/v1/auth/login', { body: { correo, contrasena: 'nueva1234' } });
+    assert.strictEqual(nueva.status, 200);
+    // la sesión abierta antes del cambio queda cerrada; la nueva funciona
+    assert.strictEqual((await call('GET', '/api/v1/users/me', { token: sesionVieja })).status, 401);
+    assert.strictEqual((await call('GET', '/api/v1/users/me', { token: nueva.body.data.token })).status, 200);
+
+    // un link vencido no sirve
+    await call('POST', '/api/v1/auth/forgot-password', { body: { correo } });
+    await M.col('usuarios').updateOne({ correo }, { $set: { 'recuperacion.expira_en': new Date(Date.now() - 1000) } });
+    assert.strictEqual((await call('POST', '/api/v1/auth/reset-password', { body: { token: enviados[1].token, contrasena: 'vencida123' } })).status, 400);
+  } finally {
+    mailer.enviarRecuperacion = original;
+  }
+});
+
 test('roles: sin token 401, cliente en ruta de admin 403', { skip }, async () => {
   assert.strictEqual((await call('GET', '/api/v1/supplies')).status, 401);
   const t = await login('ignacia.valdebenito@clientes.brookies.example');

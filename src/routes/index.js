@@ -23,6 +23,8 @@ router.get('/health', w(health.check));
 router.get('/api/v1/local', local.info);
 router.post('/api/v1/auth/register', authLimiter, w(auth.register));
 router.post('/api/v1/auth/login', authLimiter, w(auth.login));
+router.post('/api/v1/auth/forgot-password', authLimiter, w(auth.forgotPassword));
+router.post('/api/v1/auth/reset-password', authLimiter, w(auth.resetPassword));
 router.get('/api/v1/products', w(productos.list));
 router.get('/api/v1/products/:id', w(productos.getById));
 router.get('/media/productos/:id', w(productos.getImage));
