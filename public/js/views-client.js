@@ -339,7 +339,8 @@ export function ingresar(root, nav) {
     campo({ id: 'correo', label: 'Correo', type: 'email', required: true, autocomplete: 'username' }),
     campo({ id: 'contrasena', label: 'Contraseña', type: 'password', required: true, autocomplete: 'current-password' }), av);
   const btn = h('button', { type: 'submit', class: 'btn' }, 'Ingresar');
-  form.append(h('p', {}, btn), h('p', { class: 'muted' }, '¿No tienes cuenta? ', h('a', { href: '#/registro' }, 'Crear una cuenta')));
+  form.append(h('p', {}, btn), h('p', {}, h('a', { href: '#/recuperar' }, '¿Olvidaste tu contraseña?')),
+    h('p', { class: 'muted' }, '¿No tienes cuenta? ', h('a', { href: '#/registro' }, 'Crear una cuenta')));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     ocupado(btn, 'Ingresando…', async () => {
@@ -347,6 +348,49 @@ export function ingresar(root, nav) {
     });
   });
   root.append(h('div', { class: 'auth' }, h('h1', {}, 'Ingresar'), form));
+}
+
+/** Pide el link para crear una contraseña nueva. El mensaje es el mismo exista o no la cuenta. */
+export function recuperar(root) {
+  const av = aviso();
+  const form = h('form', { class: 'form', novalidate: true },
+    h('p', {}, 'Escribe el correo de tu cuenta y te enviaremos un link para crear una contraseña nueva.'),
+    campo({ id: 'correo', label: 'Correo', type: 'email', required: true, autocomplete: 'email' }), av);
+  const btn = h('button', { type: 'submit', class: 'btn' }, 'Enviar link');
+  form.append(h('p', {}, btn), h('p', { class: 'muted' }, h('a', { href: '#/ingresar' }, 'Volver a ingresar')));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ocupado(btn, 'Enviando…', async () => {
+      try {
+        await post('/api/v1/auth/forgot-password', { correo: form.correo.value });
+        av.replaceChildren(alerta('success', 'Revisa tu correo.', 'Si el correo tiene una cuenta, te enviamos un link que vale por 30 minutos. Revisa también la carpeta de spam.'));
+      } catch (err) { mostrarErrores(form, err, av); }
+    });
+  });
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Recuperar contraseña'), form));
+}
+
+/** Crea la contraseña nueva con el token que llega en el link del correo. */
+export function restablecer(root, nav, m, query) {
+  const token = query.get('token') || '';
+  const av = aviso();
+  const pw = campo({ id: 'contrasena', label: 'Contraseña nueva', type: 'password', required: true, autocomplete: 'new-password', hint: 'Debe cumplir estas reglas:' });
+  const form = h('form', { class: 'form', novalidate: true }, pw, av);
+  pw.append(reglasPassword(pw.querySelector('input')));
+  pw.querySelector('input').setAttribute('aria-describedby', 'contrasena-hint pw-reglas');
+  const btn = h('button', { type: 'submit', class: 'btn' }, 'Guardar contraseña');
+  form.append(h('p', {}, btn));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ocupado(btn, 'Guardando…', async () => {
+      try {
+        await post('/api/v1/auth/reset-password', { token, contrasena: form.contrasena.value });
+        form.replaceChildren(alerta('success', 'Contraseña actualizada.', 'Ya puedes ingresar con tu contraseña nueva.'), h('p', {}, h('a', { class: 'btn', href: '#/ingresar' }, 'Ingresar')));
+      } catch (err) { mostrarErrores(form, err, av); }
+    });
+  });
+  root.append(h('div', { class: 'auth' }, h('h1', {}, 'Crear contraseña nueva'),
+    token ? form : alerta('error', 'El link no es válido.', 'Pide uno nuevo desde "¿Olvidaste tu contraseña?".')));
 }
 
 export function registro(root, nav) {

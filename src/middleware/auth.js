@@ -33,6 +33,10 @@ async function requireAuth(req, res, next) {
     }
     const user = await Usuario.findById(payload.sub);
     if (!user || !user.activo) throw new HttpError(401, 'la cuenta no existe o está desactivada');
+    // cambiar la contraseña cierra las sesiones abiertas: vale solo el token emitido después del cambio (iat va en segundos)
+    if (user.contrasena_cambiada && payload.iat < Math.floor(new Date(user.contrasena_cambiada).getTime() / 1000)) {
+      throw new HttpError(401, 'la contraseña cambió, inicie sesión de nuevo');
+    }
     req.user = user;
     return next();
   } catch (err) {

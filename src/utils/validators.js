@@ -336,6 +336,22 @@ function validateLogin(body = {}) {
   return { errors, data: { correo, contrasena: body.contrasena } };
 }
 
+/** POST /api/v1/auth/forgot-password: solo el correo. */
+function validateForgot(body = {}) {
+  const correo = parseEmail(body.correo);
+  return { errors: correo === null ? [{ field: 'correo', message: 'debe ser un correo válido' }] : [], data: { correo } };
+}
+
+/** POST /api/v1/auth/reset-password: el token del link (64 caracteres hexadecimales) y la contraseña nueva. */
+function validateReset(body = {}) {
+  const errors = [];
+  const token = typeof body.token === 'string' && /^[a-f0-9]{64}$/.test(body.token) ? body.token : null;
+  if (token === null) errors.push({ field: 'token', message: 'el link no es válido' });
+  const contrasena = parsePassword(body.contrasena);
+  if (contrasena === null) errors.push({ field: 'contrasena', message: 'mínimo 8 caracteres, con al menos un número' });
+  return { errors, data: { token, contrasena } };
+}
+
 /** PUT /api/v1/me (RF03): datos personales editables. */
 function validateProfile(body = {}) {
   const errors = [];
@@ -399,7 +415,7 @@ function parseOrderFilter(query = {}) {
 }
 
 module.exports = {
-  validateRegister, validateLogin, validateProfile, validateCart, validatePayment, validateStatus, parseOrderFilter, parsePassword, parseEmail, ORDER_STATES,
+  validateRegister, validateLogin, validateForgot, validateReset, validateProfile, validateCart, validatePayment, validateStatus, parseOrderFilter, parsePassword, parseEmail, ORDER_STATES,
   parseProductQuery, parseId, escapeLike,
   parseInteger, parsePositiveInt, parseDecimal, parsePrice, parseText, parseBoolean, parseEnum,
   validateInsumoCreate, validateRestock, validateProductoCreate, validateRecetaItem, validateSell,

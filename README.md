@@ -33,6 +33,8 @@ JWT_SECRET=<texto aleatorio de al menos 16 caracteres>
 
 Opcionales: `PORT` (3000), `JWT_EXPIRES_IN` (8h), `RATE_LIMIT` (300 por 15 min), `AUTH_RATE_LIMIT` (20 por 15 min), `RESERVA_MINUTOS` (10) y `MONGO_TX=off` para un MongoDB sin replica set. Para la pantalla del local: `LOCAL_DIRECCION`, `LOCAL_TELEFONO`, `LOCAL_CORREO`, `LOCAL_INSTAGRAM` (usuario sin @; por defecto `brookiescoffee.cl`), `LOCAL_HORARIO_SEMANA`, `LOCAL_HORARIO_FINDE`, `LOCAL_MAPA` (lo que se busca en Google Maps; por defecto, la Copec de Av. Edmundo Eluchans 3100, Concón, la zona donde estará el local) y `LOCAL_ABIERTO=true` para quitar el aviso de que el local aún no abre.
 
+Recuperar contraseña (link por correo que vale 30 minutos y sirve una sola vez): `SMTP_USER` (la cuenta de Gmail) y `SMTP_PASS` (una contraseña de aplicación de Google, no la clave normal; se crea en myaccount.google.com/apppasswords con la verificación en dos pasos activada). Opcionales: `MAIL_FROM` (remitente), `SMTP_HOST` y `SMTP_PORT` (por defecto smtp.gmail.com y 465) y `APP_URL` (la dirección pública para armar el link; en Render se usa sola la que entrega la plataforma, y en local `http://localhost:3000`). Sin `SMTP_USER` ni `SMTP_PASS` no se envía nada y el link aparece en la consola del servidor.
+
 Logo: `public/img/brookies-logo.png` (barra superior) y `public/img/favicon.png` (ícono de la pestaña). `public/img/logo.svg` queda como relleno de los productos sin foto.
 
 ```bash
