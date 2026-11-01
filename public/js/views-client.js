@@ -91,7 +91,7 @@ export function menu(root, nav) {
             p.apto_para.map((a) => h('span', { class: 'tag' }, APTO[a]))),
           h('p', { class: 'price' }, clp(p.precio)),
           h('div', { class: 'actions' },
-            agotado ? h('span', { class: 'status bad' }, 'Agotado por ahora') : [
+            agotado ? h('span', { class: 'status bad' }, 'Agotado') : [
               h('div', { class: 'qty', role: 'group', 'aria-label': `Cantidad de ${p.nombre}` },
                 h('button', { type: 'button', 'aria-label': 'Una menos', onclick: () => mas(-1) }, '−'), out,
                 h('button', { type: 'button', 'aria-label': 'Una más', onclick: () => mas(1) }, '+')),
