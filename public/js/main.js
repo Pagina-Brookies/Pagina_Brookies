@@ -55,7 +55,6 @@ function render() {
   const query = new URLSearchParams(qs || '');
   const hit = RUTAS.map((r) => [r, r[0].exec(ruta)]).find(([, m]) => m);
   root.replaceChildren();
-  root.classList.toggle('full', ruta === '/'); // el menú usa todo el ancho de la pantalla
   navEl.classList.remove('open');
   document.getElementById('nav-toggle').setAttribute('aria-expanded', 'false');
   pintarNav();

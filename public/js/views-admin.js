@@ -18,6 +18,7 @@ export async function adminPedidos(root, nav) {
   const av = aviso();
   const cuerpo = h('div', { 'aria-live': 'polite' });
   const sel = campo({ id: 'filtro-estado', label: 'Filtrar por estado', options: [['', 'Todos'], ...Object.entries(ESTADOS).map(([k, v]) => [k, v[0]])] });
+  sel.classList.add('filtro'); // el selector no se estira a todo el ancho
   sel.addEventListener('input', (e) => { filtro = e.target.value; cargar(); });
 
   async function avanzar(p, btn) {
@@ -33,8 +34,8 @@ export async function adminPedidos(root, nav) {
         h('tbody', {}, data.map((p) => {
           const b = SIG[p.estado] ? h('button', { type: 'button', class: 'btn small' }, `Pasar a ${ESTADOS[SIG[p.estado]][0].toLowerCase()}`) : null;
           if (b) b.addEventListener('click', () => avanzar(p, b));
-          return h('tr', {}, h('td', {}, p.id_pedido), h('td', {}, fecha(p.fecha)), h('td', {}, p.cliente.nombre),
-            h('td', {}, p.items.map((i) => `${i.cantidad} × ${i.nombre}`).join(', ')), h('td', { class: 'num' }, clp(p.total)), h('td', {}, estadoTag(p.estado)), h('td', {}, b || h('span', { class: 'muted' }, 'Sin acciones')));
+          return h('tr', {}, h('td', {}, p.id_pedido), h('td', { class: 'nowrap' }, fecha(p.fecha)), h('td', {}, p.cliente.nombre),
+            h('td', { class: 'col-productos' }, p.items.map((i) => `${i.cantidad} × ${i.nombre}`).join(', ')), h('td', { class: 'num' }, clp(p.total)), h('td', {}, estadoTag(p.estado)), h('td', {}, b || h('span', { class: 'muted' }, 'Sin acciones')));
         })))) : vacio('No hay pedidos con ese estado.'));
     } catch (e) { cuerpo.replaceChildren(alerta('error', 'No pudimos cargar los pedidos.', e.message)); }
   }
@@ -434,6 +435,6 @@ export async function adminReportes(root) {
     h('p', { class: 'muted' }, 'Las mismas consultas de la primera entrega, ahora en el lenguaje de MongoDB.'), consultas.map((c) => verConsulta(c)));
   root.replaceChildren(h('h1', {}, 'Administración'), pestanas('reportes'),
     h('p', { class: 'muted' }, 'Cada reporte se descarga con la misma plantilla y los valores de este momento. Ábralo en el navegador; para PDF use Imprimir → Guardar como PDF.'),
-    top, crit, filt, catalogo);
+    h('div', { class: 'reportes-grid' }, top, crit, filt), catalogo);
   filtrar();
 }
