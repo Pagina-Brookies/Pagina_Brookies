@@ -91,7 +91,7 @@ export function menu(root, nav) {
             p.apto_para.map((a) => h('span', { class: 'tag' }, APTO[a]))),
           h('p', { class: 'price' }, clp(p.precio)),
           h('div', { class: 'actions' },
-            agotado ? h('span', { class: 'status bad' }, 'Agotado por ahora') : [
+            agotado ? h('span', { class: 'status bad' }, 'Agotado') : [
               h('div', { class: 'qty', role: 'group', 'aria-label': `Cantidad de ${p.nombre}` },
                 h('button', { type: 'button', 'aria-label': 'Una menos', onclick: () => mas(-1) }, '−'), out,
                 h('button', { type: 'button', 'aria-label': 'Una más', onclick: () => mas(1) }, '+')),
@@ -408,7 +408,8 @@ export async function local(root) {
         h('div', { class: 'local-info' },
           h('div', { class: 'panel' }, h('h2', {}, l.mapa.referencial ? 'Dónde estaremos' : 'Dónde estamos'), h('p', {}, l.direccion)),
           h('div', { class: 'panel' }, h('h2', {}, 'Horarios'), h('ul', {}, l.horarios.map((x) => h('li', {}, h('strong', {}, `${x.dias}: `), x.horario)))),
-          h('div', { class: 'panel' }, h('h2', {}, 'Contacto y ayuda'), h('p', {}, 'Teléfono: ', h('a', { href: `tel:${l.telefono.replace(/\s/g, '')}` }, l.telefono)), h('p', {}, 'Correo: ', h('a', { href: `mailto:${l.correo_contacto}` }, l.correo_contacto)))),
+          h('div', { class: 'panel' }, h('h2', {}, 'Contacto y ayuda'), h('p', {}, 'Teléfono: ', h('a', { href: `tel:${l.telefono.replace(/\s/g, '')}` }, l.telefono)), h('p', {}, 'Correo: ', h('a', { href: `mailto:${l.correo_contacto}` }, l.correo_contacto)),
+            h('p', {}, 'Instagram: ', h('a', { href: `https://www.instagram.com/${l.instagram}/`, target: '_blank', rel: 'noopener noreferrer' }, `@${l.instagram}`)))),
         mapa));
   } catch (e) { root.append(alerta('error', 'No pudimos cargar los datos del local.', e.message)); }
 }

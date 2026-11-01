@@ -17,6 +17,7 @@ function info(req, res) {
     },
     telefono: process.env.LOCAL_TELEFONO || '+56 9 1111 1111',
     correo_contacto: process.env.LOCAL_CORREO || 'contacto@brookies.example',
+    instagram: process.env.LOCAL_INSTAGRAM || 'brookiescoffee.cl',
     horarios: [
       { dias: 'Lunes a viernes', horario: process.env.LOCAL_HORARIO_SEMANA || '08:30 a 19:00' },
       { dias: 'Sábado y domingo', horario: process.env.LOCAL_HORARIO_FINDE || '10:00 a 18:00' },
